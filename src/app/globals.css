@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Filthy Friday brand tokens */
+    --ff-near-black: #090A0B;
+    --ff-dark-gray: #161718;
+    --ff-hot-pink: #FA2BA9;
+    --ff-neon-yellow: #FFF200;
+    --ff-neon-green: #9DFF60;
+    --ff-gold: #F7DA64;
+    --ff-white: #FFFFFF;
+    --ff-dim-white: rgba(255, 255, 255, 0.5);
+    --ff-border: rgba(255, 255, 255, 0.08);
+
+    /* shadcn tokens mapped to Filthy Friday dark theme */
+    --background: 9 10 11;
+    --foreground: 255 255 255;
+    --card: 22 23 24;
+    --card-foreground: 255 255 255;
+    --popover: 22 23 24;
+    --popover-foreground: 255 255 255;
+    --primary: 250 43 169;
+    --primary-foreground: 9 10 11;
+    --secondary: 31 32 34;
+    --secondary-foreground: 255 255 255;
+    --muted: 31 32 34;
+    --muted-foreground: 160 160 170;
+    --accent: 250 43 169;
+    --accent-foreground: 9 10 11;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 255 255 255;
+    --input: 255 255 255;
+    --ring: 250 43 169;
+    --radius: 0.75rem;
+  }
+
+  html, body {
+    background: var(--ff-near-black);
+    color: var(--ff-white);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+
+  body {
+    padding-bottom: 88px; /* space for bottom nav */
+  }
+}
+
+@layer utilities {
+  .text-hot-pink { color: var(--ff-hot-pink); }
+  .text-neon-yellow { color: var(--ff-neon-yellow); }
+  .text-neon-green { color: var(--ff-neon-green); }
+  .text-gold { color: var(--ff-gold); }
+  .text-dim { color: var(--ff-dim-white); }
+
+  .bg-hot-pink { background-color: var(--ff-hot-pink); }
+  .bg-neon-yellow { background-color: var(--ff-neon-yellow); }
+  .bg-neon-green { background-color: var(--ff-neon-green); }
+  .bg-gold { background-color: var(--ff-gold); }
+  .bg-near-black { background-color: var(--ff-near-black); }
+  .bg-card-ff { background-color: var(--ff-dark-gray); }
+
+  .border-ff { border: 1px solid var(--ff-border); }
+
+  .pulse-live {
+    animation: pulse-live 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(157, 255, 96, 0.7); }
+    50%      { opacity: 0.85; box-shadow: 0 0 0 8px rgba(157, 255, 96, 0); }
+  }
+
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+}

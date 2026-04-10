@@ -52,3 +52,6 @@ Thumbs.db
 
 # OS
 Desktop.ini
+
+# Claude Code local settings
+.claude/

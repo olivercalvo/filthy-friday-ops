@@ -1,0 +1,31 @@
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import { MobileShell } from "@/components/layout/mobile-shell";
+import { BottomNav } from "@/components/layout/bottom-nav";
+
+export const metadata: Metadata = {
+  title: "Filthy Friday OPS",
+  description: "Operaciones para la fiesta más salvaje de Bocas del Toro",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#090A0B",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="es" className="dark">
+      <body className="antialiased">
+        <MobileShell>{children}</MobileShell>
+        <BottomNav />
+      </body>
+    </html>
+  );
+}
