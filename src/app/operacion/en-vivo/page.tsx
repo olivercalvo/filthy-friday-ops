@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { mockEvent, mockVenues, mockAlerts } from "@/lib/mock-data";
+import Link from "next/link";
+import { mockEvent, mockVenues, mockAlerts, mockChecklistItems } from "@/lib/mock-data";
 import { StatusPill } from "@/components/ui/status-pill";
+import { ProgressRing } from "@/components/ui/progress-ring";
 import { cn } from "@/lib/utils";
 import type { AlertRow } from "@/types/database";
 
 type LocalAlert = AlertRow;
+
+function venueProgress(venueId: string) {
+  const items = mockChecklistItems.filter((i) => i.venue_id === venueId);
+  if (items.length === 0) return 0;
+  return (items.filter((i) => i.completed).length / items.length) * 100;
+}
 
 export default function EnVivoPage() {
   const [alerts, setAlerts] = useState<LocalAlert[]>(mockAlerts);
@@ -33,7 +41,7 @@ export default function EnVivoPage() {
   return (
     <div className="space-y-5">
       <section className="px-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <MetricCard label="Tickets" value={mockEvent.tickets_sold.toString()} color="text-white" />
           <MetricCard label="Check-ins" value={mockEvent.checked_in.toString()} color="text-[#9DFF60]" />
           <MetricCard label="No-show" value={`${noShowPct}%`} color="text-[#FFF200]" />
@@ -43,22 +51,30 @@ export default function EnVivoPage() {
 
       <section className="px-4">
         <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">Venues</h2>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
           {mockVenues.map((v) => {
             const active = v.id === mockEvent.active_venue_id;
             const finished = (mockVenues.findIndex((x) => x.id === mockEvent.active_venue_id) ?? 0) >
               (mockVenues.findIndex((x) => x.id === v.id) ?? 0);
+            const progress = venueProgress(v.id);
             return (
-              <div key={v.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#161718] p-3">
+              <Link
+                key={v.id}
+                href={`/operacion/montaje?venue=${v.id}`}
+                className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#161718] p-3 transition-colors hover:border-[#FA2BA9]/50"
+              >
                 <span className="text-2xl">{v.emoji}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{v.name}</p>
                   <p className="text-[11px] text-dim">{v.start_time}–{v.end_time}</p>
+                  <div className="mt-1">
+                    <StatusPill variant={active ? "active" : finished ? "off" : "pending"}>
+                      {active ? "Activo" : finished ? "Cerrado" : "Pendiente"}
+                    </StatusPill>
+                  </div>
                 </div>
-                <StatusPill variant={active ? "active" : finished ? "off" : "pending"}>
-                  {active ? "Activo" : finished ? "Cerrado" : "Pendiente"}
-                </StatusPill>
-              </div>
+                <ProgressRing value={progress} size={48} stroke={4} />
+              </Link>
             );
           })}
         </div>

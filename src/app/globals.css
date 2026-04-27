@@ -47,7 +47,12 @@
   }
 
   body {
-    padding-bottom: 88px; /* space for bottom nav */
+    padding-bottom: 88px; /* space for bottom nav on mobile/tablet */
+  }
+  @media (min-width: 1024px) {
+    body {
+      padding-bottom: 0;
+    }
   }
 }
 

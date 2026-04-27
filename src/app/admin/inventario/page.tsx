@@ -42,13 +42,13 @@ function Equipos() {
   return (
     <>
       <div className="px-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-4">
           <BodegaCard num={1} name="Oficina" count={b1} />
           <BodegaCard num={2} name="Acceso por bote" count={b2} />
         </div>
       </div>
 
-      <ul className="space-y-2 px-4">
+      <ul className="grid grid-cols-1 gap-2 px-4 md:grid-cols-2 lg:grid-cols-3">
         {mockInventory.map((item) => {
           const pct = item.total > 0 ? (item.assigned / item.total) * 100 : 0;
           const available = item.total - item.assigned;
@@ -124,7 +124,7 @@ function Licor() {
   return (
     <>
       <div className="px-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-white/10 bg-[#161718] p-3">
             <p className="text-[9px] uppercase tracking-wider text-dim">Referencias</p>
             <p className="mt-0.5 text-2xl font-black">{mockLiquor.length}</p>
@@ -155,7 +155,7 @@ function Licor() {
         ))}
       </div>
 
-      <ul className="space-y-2 px-4">
+      <ul className="grid grid-cols-1 gap-2 px-4 md:grid-cols-2 lg:grid-cols-3">
         {filtered.map((l) => {
           const low = l.stock < l.min_stock;
           return (

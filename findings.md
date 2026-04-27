@@ -56,10 +56,11 @@
 - **Decisión:** Deploy a Vercel desde `main`.
 - **Razones:** Integración nativa con Next.js, previews por PR, edge runtime, gratis para el MVP.
 
-### D-003 — Mobile-first con desktop responsive
-- **Fecha:** 2026-04-10
-- **Decisión:** Diseñar para 430px primero, usar max-width 430px centrado en desktop.
-- **Razones:** El equipo operativo usa teléfonos en campo. El desktop es secundario (solo para supervisión).
+### D-003 — Mobile-first con desktop responsive (revisado 2026-04-27)
+- **Fecha:** 2026-04-10 (decisión inicial) · **Revisado:** 2026-04-27
+- **Decisión actual:** Mobile-first sigue vigente (430px de referencia), pero ahora con 3 breakpoints completos: mobile <768 (1 col + bottom nav), tablet 768–1024 (2 col + bottom nav), desktop ≥1024 (sidebar 220px + grid 2-3 col, max-w-1280 centrado).
+- **Razones del cambio:** El supervisor en oficina necesita ver más información a la vez. Mantener todo a 430px en desktop desperdicia espacio. Bottom nav no tiene sentido en pantalla grande con cursor.
+- **Implementación:** `SideNav` (lg:flex), `BottomNav` con `lg:hidden`, `MobileShell` con `lg:pl-[220px] lg:max-w-1280`, grids `md:grid-cols-2 lg:grid-cols-3`.
 
 ### D-004 — Sin fuentes custom en MVP
 - **Fecha:** 2026-04-10
@@ -68,4 +69,12 @@
 
 ---
 
-*Última actualización: 2026-04-10 — inicialización.*
+### D-005 — Home como landing de módulos, no dashboard
+- **Fecha:** 2026-04-27
+- **Decisión:** El Home pasa de ser un dashboard cargado (métricas + venues + feed) a una landing limpia con cards de navegación. Las métricas detalladas, venues con progress y feed en vivo se mueven a Operación → En Vivo.
+- **Razones:** El Home tenía demasiada información mezclada de distintos módulos. La separación clarifica que Operación es donde se monitorea la fiesta y el Home es solo el punto de entrada.
+- **Implicación:** En Vivo ahora es la pantalla "operativa" del supervisor durante la fiesta. El Home queda como entrada con un resumen breve si hay fiesta activa.
+
+---
+
+*Última actualización: 2026-04-27 — D-003 revisada y D-005 agregada.*

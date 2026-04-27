@@ -35,7 +35,7 @@ export default function CrewPage() {
     <div className="space-y-4">
       {/* Metrics */}
       <div className="px-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-3 lg:gap-3">
           <CountCard label="Activos" value={counts.active} color="text-[#9DFF60]" />
           <CountCard label="Pendientes" value={counts.pending} color="text-[#FFF200]" />
           <CountCard label="Libres" value={counts.off} color="text-white/50" />
@@ -65,7 +65,7 @@ export default function CrewPage() {
         {Object.entries(grouped).map(([venue, list]) => (
           <div key={venue}>
             <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">{venue}</h3>
-            <ul className="space-y-2">
+            <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
               {list.map((m) => (
                 <li key={m.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-[#161718] p-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FA2BA9]/20 text-sm font-black text-[#FA2BA9]">

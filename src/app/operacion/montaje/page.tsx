@@ -73,7 +73,7 @@ export default function MontajePage() {
         </div>
       </div>
 
-      <ul className="space-y-2 px-4">
+      <ul className="grid grid-cols-1 gap-2 px-4 md:grid-cols-2 lg:grid-cols-2">
         {current.map((item) => (
           <li key={item.id}>
             <button
@@ -112,7 +112,7 @@ export default function MontajePage() {
         <button
           disabled={!allDone}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-colors",
+            "flex w-full items-center justify-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-bold uppercase tracking-wider transition-colors md:max-w-sm",
             allDone
               ? "border-[#FA2BA9] bg-[#FA2BA9] text-[#090A0B]"
               : "cursor-not-allowed border-white/10 bg-[#161718] text-white/30"

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { MobileShell } from "@/components/layout/mobile-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { SideNav } from "@/components/layout/side-nav";
 
 export const metadata: Metadata = {
   title: "Filthy Friday OPS",
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className="antialiased">
+        <SideNav />
         <MobileShell>{children}</MobileShell>
         <BottomNav />
       </body>

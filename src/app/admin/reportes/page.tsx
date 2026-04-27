@@ -11,7 +11,7 @@ const reports = [
 
 export default function ReportesPage() {
   return (
-    <div className="space-y-2 px-4">
+    <div className="grid grid-cols-1 gap-2 px-4 md:grid-cols-2 lg:grid-cols-3">
       {reports.map((r) => {
         const Icon = r.icon;
         return (
@@ -33,7 +33,7 @@ export default function ReportesPage() {
           </button>
         );
       })}
-      <p className="px-2 pt-4 text-[11px] leading-relaxed text-dim">
+      <p className="px-2 pt-4 text-[11px] leading-relaxed text-dim md:col-span-2 lg:col-span-3">
         Los reportes estarán disponibles en una fase posterior. La infraestructura de datos ya está lista para generarlos.
       </p>
     </div>

@@ -96,6 +96,33 @@
 
 ---
 
+## FASE 4.1 — RESPONSIVE + HOME REDESIGN (2026-04-27) ✅
+
+### Layout responsive (3 breakpoints)
+- [x] `SideNav` (lg:flex, 220px fijo, logo + tabs verticales)
+- [x] `BottomNav` con `lg:hidden`
+- [x] `MobileShell` con max-w 430 → md:768 → lg:1280 + `lg:pl-[220px]`
+- [x] `body` `padding-bottom: 88px` solo en mobile/tablet
+
+### Home como landing
+- [x] Header limpio + badge EN VIVO (sin métricas en strip)
+- [x] Card de fiesta activa compacta con progress ring
+- [x] 2 cards grandes de módulos (Operación pink, Admin gold) en grid 1/2-col
+- [x] 4 accesos directos en grid 2/4-col
+
+### Dashboard movido a Operación → En Vivo
+- [x] Venues con progress ring junto a status pill
+- [x] Métricas en grid 2/4-col
+
+### Grids responsive en páginas internas
+- [x] Crew: 1/2/3-col
+- [x] Inventario (equipos + licor): 1/2/3-col
+- [x] Reportes: 1/2/3-col
+- [x] Cuadre: secciones 1/2/3-col
+- [x] Montaje: checklist 1/2-col
+
+---
+
 ## FASE 5 — TRIGGER
 
 - [ ] Crear proyecto en Vercel y conectar a GitHub
@@ -110,10 +137,10 @@
 
 ---
 
-## Estado actual — 2026-04-10
+## Estado actual — 2026-04-27
 
-- **Completado:** Fases 0, 1 (SQL ready), 2 (client + types), 3 (páginas con mock), 4 (branding aplicado).
-- **Bloqueos:** falta credenciales Supabase para ejecutar migración + seed y conectar datos reales. Falta proyecto Vercel para Fase 5.
+- **Completado:** Fases 0, 1 (SQL ready), 2 (client + types), 3 (páginas con mock), 4 (branding aplicado), 4.1 (responsive + home redesign).
+- **Bloqueos:** falta credenciales Supabase para ejecutar migración + seed y conectar datos reales. Falta proyecto Vercel para Fase 5. Falta Playwright MCP para verificación visual automatizada.
 - **Próximo:** el usuario provee credenciales Supabase → correr migración + seed → swap mock imports por queries reales → conectar Realtime al feed de alertas y checklist.
 
-*Última actualización: 2026-04-10 — Fases 0-4 completas, pendiente conexión Supabase y Fase 5.*
+*Última actualización: 2026-04-27 — Fase 4.1 aplicada (layout responsive + Home rediseñado).*
