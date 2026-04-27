@@ -56,3 +56,5 @@ Desktop.ini
 
 # Claude Code local settings
 .claude/
+
+.vercel
