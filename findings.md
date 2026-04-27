@@ -58,6 +58,14 @@
 - **Lección:** En SSR + client components, **cualquier `new Date()` o `Date.now()` en module scope** es un riesgo de hydration mismatch, igual que **`Intl.DateTimeFormat`** lo es por divergencia de ICU. Para datos mock, anclar a strings fijos. Para timestamps reales que sí cambian, formatear con utilities propias o usar `useEffect` post-mount con `suppressHydrationWarning`.
 - **Prevención:** Cuando agreguemos un `findings`/`commit` hook, considerar grep de `new Date()` o `Date.now()` en archivos bajo `src/lib/` (capa de datos) — esos son lugares clásicos donde el determinismo importa.
 
+### E-003 — PGRST205: tablas no encontradas en el proyecto Supabase
+- **Fecha:** 2026-04-27
+- **Síntoma:** Tras conectar la app a Supabase con la URL `rgyywpraqgnyzfzncuoc.supabase.co` y la anon publishable key, **todas** las queries devuelven `PGRST205 — Could not find the table 'public.<X>' in the schema cache` (HTTP 404). La app usa el fallback a mock y queda 100% funcional pero no contra DB real.
+- **Causa raíz:** Las migraciones (`supabase/migrations/0001_init.sql` + `supabase/seed.sql`) no se ejecutaron en este proyecto. La REST API responde y la auth funciona — solo no hay tablas.
+- **Verificación:** `curl -H "apikey: …" https://…supabase.co/rest/v1/venues?select=id&limit=1` → `404 PGRST205`. Mismo error para las 9 tablas de la migración.
+- **Fix:** Ejecutar el SQL de `supabase/migrations/0001_init.sql` y luego `supabase/seed.sql` en el SQL Editor del proyecto Supabase (o vía `supabase db push` con CLI linkeada). PostgREST refresca el schema cache automáticamente al detectar DDL.
+- **Lección secundaria — `head: true` enmascara errores:** Mi primer `pingSupabase()` usaba `select("id", { head: true, count: "exact" }).limit(1)` para detectar la conexión. Con `head: true`, supabase-js no propagaba el error PGRST205 (devolvía `error: null`), así que el indicador "modo offline" no se mostraba aunque las queries reales fallaban. **Fix:** usar un select normal `.select("id").limit(1)` para el ping. La detección de errores funciona bien sin `head: true`.
+
 ---
 
 ## Tests
@@ -100,4 +108,4 @@
 
 ---
 
-*Última actualización: 2026-04-27 — E-002 agregado (hydration mismatch en En Vivo).*
+*Última actualización: 2026-04-27 — E-003 agregado (PGRST205: tablas faltantes en Supabase + lección sobre `head:true`).*

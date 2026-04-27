@@ -90,21 +90,26 @@ export type AlertRow = {
   venue_id: string | null;
 };
 
+// supabase-js v2.103+ exige `Relationships: []` por tabla y `Views`/`Functions`
+// con shapes compatibles con `GenericView`/`GenericFunction`. Sin esto, los
+// `insert()` y `update()` se inferían como `never` y rompían el typecheck.
+type T<R> = { Row: R; Insert: Partial<R>; Update: Partial<R>; Relationships: [] };
+
 export type Database = {
   public: {
     Tables: {
-      venues: { Row: VenueRow; Insert: Partial<VenueRow>; Update: Partial<VenueRow> };
-      events: { Row: EventRow; Insert: Partial<EventRow>; Update: Partial<EventRow> };
-      checklist_templates: { Row: ChecklistTemplateRow; Insert: Partial<ChecklistTemplateRow>; Update: Partial<ChecklistTemplateRow> };
-      checklist_items: { Row: ChecklistItemRow; Insert: Partial<ChecklistItemRow>; Update: Partial<ChecklistItemRow> };
-      crew_members: { Row: CrewMemberRow; Insert: Partial<CrewMemberRow>; Update: Partial<CrewMemberRow> };
-      inventory_items: { Row: InventoryItemRow; Insert: Partial<InventoryItemRow>; Update: Partial<InventoryItemRow> };
-      liquor_catalog: { Row: LiquorCatalogRow; Insert: Partial<LiquorCatalogRow>; Update: Partial<LiquorCatalogRow> };
-      liquor_movements: { Row: LiquorMovementRow; Insert: Partial<LiquorMovementRow>; Update: Partial<LiquorMovementRow> };
-      alerts: { Row: AlertRow; Insert: Partial<AlertRow>; Update: Partial<AlertRow> };
+      venues: T<VenueRow>;
+      events: T<EventRow>;
+      checklist_templates: T<ChecklistTemplateRow>;
+      checklist_items: T<ChecklistItemRow>;
+      crew_members: T<CrewMemberRow>;
+      inventory_items: T<InventoryItemRow>;
+      liquor_catalog: T<LiquorCatalogRow>;
+      liquor_movements: T<LiquorMovementRow>;
+      alerts: T<AlertRow>;
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Views: Record<never, never>;
+    Functions: Record<never, never>;
+    Enums: Record<never, never>;
   };
 };

@@ -1,27 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { mockEvent } from "@/lib/mock-data";
+import { fetchWithFallback } from "@/lib/data/client-fetch";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import type { EventRow } from "@/types/database";
+import { cn } from "@/lib/utils";
+
+type FormState = {
+  ticketsSold: number;
+  checkedIn: number;
+  vipTotal: number;
+  vipCash: number;
+  vipCard: number;
+  vipBottles: number;
+  merchUnits: number;
+  merchTotal: number;
+};
+
+function fromEvent(e: EventRow): FormState {
+  return {
+    ticketsSold: e.tickets_sold,
+    checkedIn: e.checked_in,
+    vipTotal: e.vip_total,
+    vipCash: e.vip_cash,
+    vipCard: e.vip_card,
+    vipBottles: e.vip_bottles,
+    merchUnits: e.merch_units,
+    merchTotal: e.merch_total,
+  };
+}
 
 export default function CuadrePage() {
-  const [state, setState] = useState({
-    ticketsSold: mockEvent.tickets_sold,
-    checkedIn: mockEvent.checked_in,
-    vipTotal: mockEvent.vip_total,
-    vipCash: mockEvent.vip_cash,
-    vipCard: mockEvent.vip_card,
-    vipBottles: mockEvent.vip_bottles,
-    merchUnits: mockEvent.merch_units,
-    merchTotal: mockEvent.merch_total,
-  });
+  const [eventId, setEventId] = useState<string>(mockEvent.id);
+  const [state, setState] = useState<FormState>(fromEvent(mockEvent));
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      const eventRes = await fetchWithFallback<EventRow>(
+        "event",
+        async (c) => {
+          const { data, error } = await c
+            .from("events")
+            .select("*")
+            .eq("status", "active")
+            .order("date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (error) throw error;
+          if (!data) throw new Error("no active event");
+          return data as EventRow;
+        },
+        mockEvent
+      );
+      if (canceled) return;
+      setEventId(eventRes.data.id);
+      setState(fromEvent(eventRes.data));
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, []);
 
   const noShow = Math.max(0, state.ticketsSold - state.checkedIn);
   const checkInPct = state.ticketsSold > 0 ? (state.checkedIn / state.ticketsSold) * 100 : 0;
 
+  const save = async () => {
+    if (!isSupabaseConfigured()) {
+      setSavedAt(new Date());
+      return;
+    }
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("events")
+        .update({
+          tickets_sold: state.ticketsSold,
+          checked_in: state.checkedIn,
+          vip_total: state.vipTotal,
+          vip_cash: state.vipCash,
+          vip_card: state.vipCard,
+          vip_bottles: state.vipBottles,
+          merch_units: state.merchUnits,
+          merch_total: state.merchTotal,
+        })
+        .eq("id", eventId);
+      if (error) throw error;
+      setSavedAt(new Date());
+    } catch (err) {
+      console.warn("[cuadre:save] failed", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="grid gap-4 px-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Reconciliación de tickets */}
         <section>
           <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">Reconciliación de tickets</h2>
           <div className="rounded-2xl border border-white/10 bg-[#161718] p-4">
@@ -46,7 +125,6 @@ export default function CuadrePage() {
           </div>
         </section>
 
-        {/* VIP */}
         <section>
           <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">Cuadre VIP</h2>
           <div className="rounded-2xl border border-white/10 bg-[#161718] p-4">
@@ -61,7 +139,6 @@ export default function CuadrePage() {
           </div>
         </section>
 
-        {/* Merch */}
         <section className="md:col-span-2 lg:col-span-1">
           <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">Merchandise</h2>
           <div className="rounded-2xl border border-white/10 bg-[#161718] p-4">
@@ -84,9 +161,21 @@ export default function CuadrePage() {
       </div>
 
       <div className="px-4">
-        <button className="w-full rounded-2xl bg-[#FA2BA9] px-4 py-3 text-sm font-bold uppercase tracking-wider text-[#090A0B] md:max-w-sm">
-          Guardar cuadre
+        <button
+          onClick={save}
+          disabled={saving}
+          className={cn(
+            "w-full rounded-2xl bg-[#FA2BA9] px-4 py-3 text-sm font-bold uppercase tracking-wider text-[#090A0B] md:max-w-sm",
+            saving && "opacity-60"
+          )}
+        >
+          {saving ? "Guardando…" : "Guardar cuadre"}
         </button>
+        {savedAt && (
+          <p className="mt-2 text-[11px] text-[#9DFF60]">
+            ✓ Guardado a las {savedAt.toLocaleTimeString("es-PA", { hour: "2-digit", minute: "2-digit", timeZone: "America/Panama" })}
+          </p>
+        )}
       </div>
     </div>
   );

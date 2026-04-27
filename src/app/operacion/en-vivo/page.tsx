@@ -1,61 +1,195 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { mockEvent, mockVenues, mockAlerts, mockChecklistItems } from "@/lib/mock-data";
+import {
+  mockEvent,
+  mockVenues,
+  mockAlerts,
+  mockChecklistItems,
+} from "@/lib/mock-data";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { cn, formatPanamaTime } from "@/lib/utils";
-import type { AlertRow } from "@/types/database";
-
-type LocalAlert = AlertRow;
-
-function venueProgress(venueId: string) {
-  const items = mockChecklistItems.filter((i) => i.venue_id === venueId);
-  if (items.length === 0) return 0;
-  return (items.filter((i) => i.completed).length / items.length) * 100;
-}
+import { fetchWithFallback } from "@/lib/data/client-fetch";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import type {
+  AlertRow,
+  EventRow,
+  VenueRow,
+  ChecklistItemRow,
+} from "@/types/database";
 
 export default function EnVivoPage() {
-  const [alerts, setAlerts] = useState<LocalAlert[]>(mockAlerts);
+  const [event, setEvent] = useState<EventRow>(mockEvent);
+  const [venues, setVenues] = useState<VenueRow[]>(mockVenues);
+  const [checklist, setChecklist] = useState<ChecklistItemRow[]>(mockChecklistItems);
+  const [alerts, setAlerts] = useState<AlertRow[]>(mockAlerts);
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"ok" | "warn" | "info">("ok");
 
-  const addAlert = () => {
-    if (!message.trim()) return;
-    const newAlert: LocalAlert = {
-      id: `a-${Date.now()}`,
-      event_id: mockEvent.id,
-      time: new Date().toISOString(),
-      message: message.trim(),
-      type,
-      venue_id: null,
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      const eventRes = await fetchWithFallback<EventRow>(
+        "event",
+        async (c) => {
+          const { data, error } = await c
+            .from("events")
+            .select("*")
+            .eq("status", "active")
+            .order("date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (error) throw error;
+          if (!data) throw new Error("no active event");
+          return data as EventRow;
+        },
+        mockEvent
+      );
+
+      const venuesRes = await fetchWithFallback<VenueRow[]>(
+        "venues",
+        async (c) => {
+          const { data, error } = await c.from("venues").select("*").order("order");
+          if (error) throw error;
+          return (data ?? []) as VenueRow[];
+        },
+        mockVenues
+      );
+
+      const checklistRes = await fetchWithFallback<ChecklistItemRow[]>(
+        "checklist",
+        async (c) => {
+          const { data, error } = await c
+            .from("checklist_items")
+            .select("*")
+            .eq("event_id", eventRes.data.id);
+          if (error) throw error;
+          return (data ?? []) as ChecklistItemRow[];
+        },
+        mockChecklistItems
+      );
+
+      const alertsRes = await fetchWithFallback<AlertRow[]>(
+        "alerts",
+        async (c) => {
+          const { data, error } = await c
+            .from("alerts")
+            .select("*")
+            .eq("event_id", eventRes.data.id)
+            .order("time", { ascending: false })
+            .limit(50);
+          if (error) throw error;
+          return (data ?? []) as AlertRow[];
+        },
+        mockAlerts
+      );
+
+      if (canceled) return;
+      setEvent(eventRes.data);
+      setVenues(venuesRes.data);
+      setChecklist(checklistRes.data);
+      setAlerts(alertsRes.data);
+    })();
+    return () => {
+      canceled = true;
     };
-    setAlerts((prev) => [newAlert, ...prev]);
-    setMessage("");
+  }, []);
+
+  // Realtime subscription a alertas: cualquier INSERT desde otro cliente o
+  // desde nuestro propio addAlert se refleja al instante.
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`alerts:${event.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "alerts", filter: `event_id=eq.${event.id}` },
+        (payload) => {
+          const row = payload.new as AlertRow;
+          setAlerts((prev) => (prev.some((a) => a.id === row.id) ? prev : [row, ...prev]));
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [event.id]);
+
+  const venueProgress = (venueId: string) => {
+    const items = checklist.filter((i) => i.venue_id === venueId);
+    if (items.length === 0) return 0;
+    return (items.filter((i) => i.completed).length / items.length) * 100;
   };
 
-  const noShow = mockEvent.tickets_sold - mockEvent.checked_in;
-  const noShowPct = Math.round((noShow / Math.max(1, mockEvent.tickets_sold)) * 100);
+  const addAlert = async () => {
+    const trimmed = message.trim();
+    if (!trimmed) return;
+    setMessage("");
+
+    if (!isSupabaseConfigured()) {
+      // En modo offline solo añadimos al estado local
+      const local: AlertRow = {
+        id: `a-${Date.now()}`,
+        event_id: event.id,
+        time: new Date().toISOString(),
+        message: trimmed,
+        type,
+        venue_id: null,
+      };
+      setAlerts((prev) => [local, ...prev]);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("alerts")
+        .insert({ event_id: event.id, message: trimmed, type, venue_id: null })
+        .select()
+        .single();
+      if (error) throw error;
+      // Si el canal Realtime ya nos llegó el INSERT, no duplicamos.
+      const row = data as AlertRow;
+      setAlerts((prev) => (prev.some((a) => a.id === row.id) ? prev : [row, ...prev]));
+    } catch (err) {
+      console.warn("[en-vivo:addAlert] insert failed", err);
+      const local: AlertRow = {
+        id: `a-${Date.now()}`,
+        event_id: event.id,
+        time: new Date().toISOString(),
+        message: trimmed,
+        type,
+        venue_id: null,
+      };
+      setAlerts((prev) => [local, ...prev]);
+    }
+  };
+
+  const noShow = event.tickets_sold - event.checked_in;
+  const noShowPct = Math.round((noShow / Math.max(1, event.tickets_sold)) * 100);
 
   return (
     <div className="space-y-5">
       <section className="px-4">
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          <MetricCard label="Tickets" value={mockEvent.tickets_sold.toString()} color="text-white" />
-          <MetricCard label="Check-ins" value={mockEvent.checked_in.toString()} color="text-[#9DFF60]" />
+          <MetricCard label="Tickets" value={event.tickets_sold.toString()} color="text-white" />
+          <MetricCard label="Check-ins" value={event.checked_in.toString()} color="text-[#9DFF60]" />
           <MetricCard label="No-show" value={`${noShowPct}%`} color="text-[#FFF200]" />
-          <MetricCard label="Ventas VIP" value={`$${mockEvent.vip_total.toLocaleString()}`} color="text-[#F7DA64]" />
+          <MetricCard label="Ventas VIP" value={`$${event.vip_total.toLocaleString()}`} color="text-[#F7DA64]" />
         </div>
       </section>
 
       <section className="px-4">
         <h2 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">Venues</h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-          {mockVenues.map((v) => {
-            const active = v.id === mockEvent.active_venue_id;
-            const finished = (mockVenues.findIndex((x) => x.id === mockEvent.active_venue_id) ?? 0) >
-              (mockVenues.findIndex((x) => x.id === v.id) ?? 0);
+          {venues.map((v) => {
+            const active = v.id === event.active_venue_id;
+            const finished =
+              (venues.findIndex((x) => x.id === event.active_venue_id) ?? 0) >
+              (venues.findIndex((x) => x.id === v.id) ?? 0);
             const progress = venueProgress(v.id);
             return (
               <Link

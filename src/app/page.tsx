@@ -1,11 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/section-header";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import {
-  mockEvent,
-  mockVenues,
-  mockChecklistItems,
-} from "@/lib/mock-data";
+import { getActiveEvent, getVenues, getChecklistItems } from "@/lib/data/queries";
 
 function formatEventDate(iso: string) {
   const d = new Date(iso + "T12:00:00");
@@ -40,19 +36,25 @@ const quickLinks = [
   { href: "/admin/reportes", emoji: "📊", label: "Reportes" },
 ];
 
-export default function Home() {
-  const overallMontaje = Math.round(
-    (mockChecklistItems.filter((i) => i.completed).length / mockChecklistItems.length) * 100
-  );
-  const checkInPct = Math.round((mockEvent.checked_in / Math.max(1, mockEvent.tickets_sold)) * 100);
-  const activeVenue = mockVenues.find((v) => v.id === mockEvent.active_venue_id);
-  const isLive = mockEvent.status === "active";
+export default async function Home() {
+  const [{ data: event }, { data: venues }] = await Promise.all([
+    getActiveEvent(),
+    getVenues(),
+  ]);
+  const { data: checklist } = await getChecklistItems(event.id);
+
+  const overallMontaje = checklist.length === 0
+    ? 0
+    : Math.round((checklist.filter((i) => i.completed).length / checklist.length) * 100);
+  const checkInPct = Math.round((event.checked_in / Math.max(1, event.tickets_sold)) * 100);
+  const activeVenue = venues.find((v) => v.id === event.active_venue_id);
+  const isLive = event.status === "active";
 
   return (
     <div className="pb-6">
       <PageHeader
         accent="Filthy Friday OPS"
-        title={formatEventDate(mockEvent.date)}
+        title={formatEventDate(event.date)}
         subtitle="Centro de operaciones"
         right={
           isLive ? (
@@ -82,8 +84,8 @@ export default function Home() {
               <ProgressRing value={overallMontaje} size={56} stroke={5} />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/10 pt-3">
-              <Stat label="Tickets" value={mockEvent.tickets_sold.toString()} />
-              <Stat label="Check-in" value={`${mockEvent.checked_in}`} hint={`${checkInPct}%`} color="text-[#9DFF60]" />
+              <Stat label="Tickets" value={event.tickets_sold.toString()} />
+              <Stat label="Check-in" value={`${event.checked_in}`} hint={`${checkInPct}%`} color="text-[#9DFF60]" />
               <Stat label="Montaje" value={`${overallMontaje}%`} color="text-[#FA2BA9]" />
             </div>
           </Link>
