@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/section-header";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { getActiveEvent, getVenues, getChecklistItems } from "@/lib/data/queries";
+import { shortTime } from "@/lib/utils";
 
 function formatEventDate(iso: string) {
   const d = new Date(iso + "T12:00:00");
@@ -78,7 +79,7 @@ export default async function Home() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9DFF60]">Fiesta activa</p>
                 <p className="mt-0.5 truncate text-base font-bold">{activeVenue.name}</p>
                 <p className="text-xs text-dim">
-                  {activeVenue.start_time}–{activeVenue.end_time} · {activeVenue.location}
+                  {shortTime(activeVenue.start_time)}–{shortTime(activeVenue.end_time)} · {activeVenue.location}
                 </p>
               </div>
               <ProgressRing value={overallMontaje} size={56} stroke={5} />

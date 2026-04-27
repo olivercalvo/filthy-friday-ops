@@ -10,7 +10,7 @@ import {
 } from "@/lib/mock-data";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { cn, formatPanamaTime } from "@/lib/utils";
+import { cn, formatPanamaTime, shortTime } from "@/lib/utils";
 import { fetchWithFallback } from "@/lib/data/client-fetch";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type {
@@ -22,6 +22,11 @@ import type {
 
 export default function EnVivoPage() {
   const [event, setEvent] = useState<EventRow>(mockEvent);
+  // `eventSource` distingue datos reales de mock para evitar mandar el mock
+  // id "e1" como event_id al INSERT (Postgres lo rechaza con 22P02 porque
+  // la columna es uuid). Sin esto, un click rápido entre mount y la
+  // resolución del fetch dispara la race.
+  const [eventSource, setEventSource] = useState<"supabase" | "mock">("mock");
   const [venues, setVenues] = useState<VenueRow[]>(mockVenues);
   const [checklist, setChecklist] = useState<ChecklistItemRow[]>(mockChecklistItems);
   const [alerts, setAlerts] = useState<AlertRow[]>(mockAlerts);
@@ -88,6 +93,7 @@ export default function EnVivoPage() {
 
       if (canceled) return;
       setEvent(eventRes.data);
+      setEventSource(eventRes.source);
       setVenues(venuesRes.data);
       setChecklist(checklistRes.data);
       setAlerts(alertsRes.data);
@@ -129,8 +135,10 @@ export default function EnVivoPage() {
     if (!trimmed) return;
     setMessage("");
 
-    if (!isSupabaseConfigured()) {
-      // En modo offline solo añadimos al estado local
+    // Sólo intentamos INSERT real si el evento vino de Supabase. Si el evento
+    // sigue siendo mock (no configurado, fetch falló, o aún no resolvió),
+    // añadir local para no mandar un id no-uuid al servidor.
+    if (!isSupabaseConfigured() || eventSource !== "supabase") {
       const local: AlertRow = {
         id: `a-${Date.now()}`,
         event_id: event.id,
@@ -200,7 +208,7 @@ export default function EnVivoPage() {
                 <span className="text-2xl">{v.emoji}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{v.name}</p>
-                  <p className="text-[11px] text-dim">{v.start_time}–{v.end_time}</p>
+                  <p className="text-[11px] text-dim">{shortTime(v.start_time)}–{shortTime(v.end_time)}</p>
                   <div className="mt-1">
                     <StatusPill variant={active ? "active" : finished ? "off" : "pending"}>
                       {active ? "Activo" : finished ? "Cerrado" : "Pendiente"}
@@ -245,7 +253,11 @@ export default function EnVivoPage() {
             ))}
             <button
               onClick={addAlert}
-              className="rounded-lg bg-white px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#090A0B]"
+              disabled={isSupabaseConfigured() && eventSource === "mock"}
+              className={cn(
+                "rounded-lg bg-white px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#090A0B]",
+                isSupabaseConfigured() && eventSource === "mock" && "opacity-40"
+              )}
             >
               Publicar
             </button>

@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Recorta la fracción de segundos de un `time` SQL ("13:30:00" → "13:30").
+// Postgres devuelve los `time without time zone` en formato HH:MM:SS, pero
+// para el UI sólo queremos HH:MM.
+export function shortTime(t: string | null | undefined): string {
+  if (!t) return "";
+  const m = t.match(/^(\d{1,2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : t;
+}
+
 // Formatea un timestamp ISO en hora Panamá ("hh:mm a. m./p. m.") sin usar
 // `Intl.DateTimeFormat`. La razón: Node y Chromium empaquetan versiones de
 // ICU distintas y a veces emiten caracteres invisibles diferentes (NBSP vs

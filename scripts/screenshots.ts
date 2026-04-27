@@ -65,8 +65,11 @@ async function captureRoute(browser: Browser, base: string, route: typeof ROUTES
     const page: Page = await context.newPage();
     const url = `${base}${route.path}`;
     await page.goto(url, { waitUntil: "networkidle" });
-    // dar tiempo a animaciones tipo pulse y a que iconos lucide hidraten
-    await page.waitForTimeout(400);
+    // dar tiempo a:
+    //  - animaciones tipo pulse, iconos lucide
+    //  - data fetch en useEffect de las páginas cliente (varias queries
+    //    secuenciales a Supabase) que arranca DESPUÉS de networkidle
+    await page.waitForTimeout(1500);
 
     const out = resolve(outDir, `${route.slug}-${vp.name}-${vp.width}.png`);
     await page.screenshot({ path: out, fullPage: true });
