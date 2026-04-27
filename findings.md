@@ -46,6 +46,18 @@
 - **Lección:** Antes de tocar config de Tailwind, verificar que el dev server al que apuntan los screenshots realmente está sirviendo el CSS compilado. Validación rápida: `curl <CSS_URL>` debe devolver `/*! ... css-loader ... globals.css */` y pesar decenas de KB. Si devuelve HTML, hay un dev server fantasma o un build corrupto.
 - **Prevención:** Considerar añadir al script `screenshots.ts` un check explícito de `Content-Type: text/css` sobre la primera URL de stylesheet del HTML antes de capturar — falla rápido en lugar de generar 21 PNGs inútiles.
 
+### E-002 — Hydration mismatch en /operacion/en-vivo (badge "1 error")
+- **Fecha:** 2026-04-27
+- **Síntoma:** Badge rojo "1 error" en la esquina inferior de la pantalla En Vivo. La página seguía siendo usable pero React abandonaba SSR y re-renderizaba todo en cliente.
+- **Causa raíz (dos bugs apilados):**
+  1. **`Date.now()` en module scope.** `mockAlerts` en `src/lib/mock-data.ts` calculaba timestamps con `new Date(Date.now() - N*60000).toISOString()`. El módulo se evalúa una vez en server (al SSR) y otra vez en client (al hidratar el bundle), separadas por segundos/minutos — los timestamps no coinciden y el feed renderea minutos distintos en cada lado.
+  2. **Divergencia de ICU entre Node y V8.** Aún tras anclar timestamps a strings fijos, `Intl.DateTimeFormat` (vía `toLocaleTimeString`) emite caracteres invisibles distintos entre Node (server) y Chromium (client) — típicamente NBSP (U+00A0) vs NNBSP (U+202F) entre la hora y el "p. m.". Visualmente idéntico, bytes distintos, hydration mismatch.
+- **Fix:**
+  1. Reemplazar todos los `new Date()` / `Date.now()` de `mock-data.ts` con timestamps absolutos anclados a `MOCK_EVENT_DATE = "2026-04-27"` y `MOCK_NOW_ISO = "14:30:00-05:00"`.
+  2. Crear `formatPanamaTime(iso)` en `src/lib/utils.ts` que parsea el ISO con math entera (sin `Intl`, sin `toLocale*`) y devuelve `"hh:mm a. m."`. 100% determinístico entre runtimes.
+- **Lección:** En SSR + client components, **cualquier `new Date()` o `Date.now()` en module scope** es un riesgo de hydration mismatch, igual que **`Intl.DateTimeFormat`** lo es por divergencia de ICU. Para datos mock, anclar a strings fijos. Para timestamps reales que sí cambian, formatear con utilities propias o usar `useEffect` post-mount con `suppressHydrationWarning`.
+- **Prevención:** Cuando agreguemos un `findings`/`commit` hook, considerar grep de `new Date()` o `Date.now()` en archivos bajo `src/lib/` (capa de datos) — esos son lugares clásicos donde el determinismo importa.
+
 ---
 
 ## Tests
@@ -88,4 +100,4 @@
 
 ---
 
-*Última actualización: 2026-04-27 — E-001 agregado (CSS no cargaba por dev server fantasma).*
+*Última actualización: 2026-04-27 — E-002 agregado (hydration mismatch en En Vivo).*

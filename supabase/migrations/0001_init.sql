@@ -51,7 +51,7 @@ create table if not exists crew_members (
   name text not null,
   role text not null,
   status text not null default 'active' check (status in ('active','pending','off')),
-  venue text not null default 'Roaming',
+  venue text not null default 'Flotante',
   phone text
 );
 

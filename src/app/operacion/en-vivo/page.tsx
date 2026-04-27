@@ -5,7 +5,7 @@ import Link from "next/link";
 import { mockEvent, mockVenues, mockAlerts, mockChecklistItems } from "@/lib/mock-data";
 import { StatusPill } from "@/components/ui/status-pill";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { cn } from "@/lib/utils";
+import { cn, formatPanamaTime } from "@/lib/utils";
 import type { AlertRow } from "@/types/database";
 
 type LocalAlert = AlertRow;
@@ -133,7 +133,7 @@ export default function EnVivoPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm leading-snug">{a.message}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-wider text-dim">
-                  {new Date(a.time).toLocaleTimeString("es-PA", { hour: "2-digit", minute: "2-digit" })}
+                  {formatPanamaTime(a.time)}
                 </p>
               </div>
             </li>

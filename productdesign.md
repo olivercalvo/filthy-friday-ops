@@ -215,7 +215,7 @@ Por ahora solo UI (la generación es fase futura):
 | name | text | |
 | role | text | Montaje, Seguridad, VIP Host, DJ, Bote Crew, etc. |
 | status | text | active / pending / off |
-| venue | text | o "Roaming" |
+| venue | text | nombre del venue, o "Flotante" si se mueve entre los 3 |
 | phone | text | opcional |
 
 ### `inventory_items`

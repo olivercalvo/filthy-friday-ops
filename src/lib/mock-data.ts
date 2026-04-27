@@ -17,9 +17,14 @@ export const mockVenues: VenueRow[] = [
   { id: "v3", name: "Aqua Lounge", emoji: "🌊", order: 3, start_time: "19:00", end_time: "02:00", location: "Isla Solarte" },
 ];
 
+// Fecha del evento mock — fija para que el render sea determinístico
+// (cualquier `new Date()` en module scope evalúa distinto en server vs client
+// y dispara hydration mismatch en el feed En Vivo).
+const MOCK_EVENT_DATE = "2026-04-27";
+
 export const mockEvent: EventRow = {
   id: "e1",
-  date: new Date().toISOString().slice(0, 10),
+  date: MOCK_EVENT_DATE,
   status: "active",
   tickets_sold: 412,
   checked_in: 287,
@@ -65,15 +70,20 @@ export const checklistTasks: Record<string, string[]> = {
   ],
 };
 
+// Hora ancla del evento (Blue Coconut activo, ~14:30 hora Panamá).
+// Todos los timestamps mock se derivan de aquí para ser deterministas.
+const MOCK_NOW_ISO = `${MOCK_EVENT_DATE}T14:30:00-05:00`;
+const MOCK_PAST_ISO = `${MOCK_EVENT_DATE}T11:00:00-05:00`;
+
 // Deterministic mock state: pretend Casa Papaya is done, Blue Coconut mid-progress, Aqua Lounge untouched.
 export const mockChecklistItems: (ChecklistItemRow & { task: string })[] = [
   ...checklistTasks.v1.map((task, i) => ({
     id: `ci-v1-${i}`, event_id: "e1", template_id: `t-v1-${i}`, venue_id: "v1",
-    completed: true, completed_at: new Date().toISOString(), completed_by: "Rey", task,
+    completed: true, completed_at: MOCK_PAST_ISO, completed_by: "Rey", task,
   })),
   ...checklistTasks.v2.map((task, i) => ({
     id: `ci-v2-${i}`, event_id: "e1", template_id: `t-v2-${i}`, venue_id: "v2",
-    completed: i < 4, completed_at: i < 4 ? new Date().toISOString() : null, completed_by: i < 4 ? "Luis R." : null, task,
+    completed: i < 4, completed_at: i < 4 ? MOCK_NOW_ISO : null, completed_by: i < 4 ? "Luis R." : null, task,
   })),
   ...checklistTasks.v3.map((task, i) => ({
     id: `ci-v3-${i}`, event_id: "e1", template_id: `t-v3-${i}`, venue_id: "v3",
@@ -82,7 +92,7 @@ export const mockChecklistItems: (ChecklistItemRow & { task: string })[] = [
 ];
 
 export const mockCrew: CrewMemberRow[] = [
-  { id: "c1", name: "Diana", role: "Gerente de Operaciones", status: "active", venue: "Roaming", phone: null },
+  { id: "c1", name: "Diana", role: "Gerente de Operaciones", status: "active", venue: "Flotante", phone: null },
   { id: "c2", name: "Rey", role: "Jefe de Crew", status: "active", venue: "Casa Papaya", phone: null },
   { id: "c3", name: "Carlos M.", role: "Montaje", status: "active", venue: "Casa Papaya", phone: null },
   { id: "c4", name: "Luis R.", role: "Montaje", status: "active", venue: "Blue Coconut", phone: null },
@@ -91,7 +101,7 @@ export const mockCrew: CrewMemberRow[] = [
   { id: "c7", name: "Jake T.", role: "Seguridad", status: "active", venue: "Blue Coconut", phone: null },
   { id: "c8", name: "Ana P.", role: "Barra VIP", status: "off", venue: "Aqua Lounge", phone: null },
   { id: "c9", name: "Marco D.", role: "DJ", status: "active", venue: "Casa Papaya", phone: null },
-  { id: "c10", name: "Tomás", role: "Bote Crew", status: "active", venue: "Roaming", phone: null },
+  { id: "c10", name: "Tomás", role: "Bote Crew", status: "active", venue: "Flotante", phone: null },
 ];
 
 export const mockInventory: InventoryItemRow[] = [
@@ -120,10 +130,13 @@ export const mockLiquor: LiquorCatalogRow[] = [
   { id: "l10", name: "Coca-Cola", category: "mixer", unit: "caja", stock: 20, min_stock: 10, icon: "🍹" },
 ];
 
+// Timestamps fijos (offset Panamá -05:00) para evitar hydration mismatch:
+// `new Date(Date.now() - …)` se evalúa al importar el módulo y rinde minutos
+// distintos en server vs client. Anclados a MOCK_NOW_ISO (14:30 hora Panamá).
 export const mockAlerts: AlertRow[] = [
-  { id: "a1", event_id: "e1", time: new Date(Date.now() - 2 * 60000).toISOString(), message: "Check-in superó 250 asistentes en Blue Coconut", type: "ok", venue_id: "v2" },
-  { id: "a2", event_id: "e1", time: new Date(Date.now() - 12 * 60000).toISOString(), message: "Stock de Corona bajo en Aqua Lounge — enviar refuerzo", type: "warn", venue_id: "v3" },
-  { id: "a3", event_id: "e1", time: new Date(Date.now() - 28 * 60000).toISOString(), message: "Planta eléctrica instalada en Blue Coconut", type: "ok", venue_id: "v2" },
-  { id: "a4", event_id: "e1", time: new Date(Date.now() - 45 * 60000).toISOString(), message: "Montaje Casa Papaya completado", type: "ok", venue_id: "v1" },
-  { id: "a5", event_id: "e1", time: new Date(Date.now() - 60 * 60000).toISOString(), message: "Retraso de bote desde Bocas Town (+15 min)", type: "warn", venue_id: null },
+  { id: "a1", event_id: "e1", time: `${MOCK_EVENT_DATE}T14:28:00-05:00`, message: "Check-in superó 250 asistentes en Blue Coconut", type: "ok", venue_id: "v2" },
+  { id: "a2", event_id: "e1", time: `${MOCK_EVENT_DATE}T14:18:00-05:00`, message: "Stock de Corona bajo en Aqua Lounge — enviar refuerzo", type: "warn", venue_id: "v3" },
+  { id: "a3", event_id: "e1", time: `${MOCK_EVENT_DATE}T14:02:00-05:00`, message: "Planta eléctrica instalada en Blue Coconut", type: "ok", venue_id: "v2" },
+  { id: "a4", event_id: "e1", time: `${MOCK_EVENT_DATE}T13:45:00-05:00`, message: "Montaje Casa Papaya completado", type: "ok", venue_id: "v1" },
+  { id: "a5", event_id: "e1", time: `${MOCK_EVENT_DATE}T13:30:00-05:00`, message: "Retraso de bote desde Bocas Town (+15 min)", type: "warn", venue_id: null },
 ];

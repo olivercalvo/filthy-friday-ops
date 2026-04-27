@@ -47,7 +47,7 @@ insert into checklist_templates (venue_id, task, "order") values
 -- Crew
 delete from crew_members;
 insert into crew_members (name, role, status, venue) values
-  ('Diana',     'Gerente de Operaciones', 'active',  'Roaming'),
+  ('Diana',     'Gerente de Operaciones', 'active',  'Flotante'),
   ('Rey',       'Jefe de Crew',           'active',  'Casa Papaya'),
   ('Carlos M.', 'Montaje',                'active',  'Casa Papaya'),
   ('Luis R.',   'Montaje',                'active',  'Blue Coconut'),
@@ -56,7 +56,7 @@ insert into crew_members (name, role, status, venue) values
   ('Jake T.',   'Seguridad',              'active',  'Blue Coconut'),
   ('Ana P.',    'Barra VIP',              'off',     'Aqua Lounge'),
   ('Marco D.',  'DJ',                     'active',  'Casa Papaya'),
-  ('Tomás',     'Bote Crew',              'active',  'Roaming');
+  ('Tomás',     'Bote Crew',              'active',  'Flotante');
 
 -- Inventory
 delete from inventory_items;
