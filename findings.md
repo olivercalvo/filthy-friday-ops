@@ -33,7 +33,18 @@
 
 ## Errores
 
-*(ninguno todavía)*
+### E-001 — Screenshots sin estilos por dev server fantasma + cache `.next/` corrupto
+- **Fecha:** 2026-04-27
+- **Síntoma:** Los screenshots del script `npm run screenshots` salieron como HTML plano sin Tailwind, sin dark theme, sin colores. La app parecía no estar aplicando CSS.
+- **Causa raíz:** Había un proceso `next dev` viejo escuchando en `:3000` con un `.next/` corrupto que servía HTML cuando se le pedía `/_next/static/css/app/layout.css` (el archivo CSS literalmente no existía en su build, así que el dev server respondía con la página index como fallback). Cuando levanté un `npm run dev` nuevo encima, Next.js detectó el puerto ocupado y rebotó a `:3002`, donde la compilación de Tailwind funcionaba bien (CSS de 40 KB). Pero el script `screenshots.ts` apunta por defecto a `localhost:3000`, así que capturó las páginas del dev server roto.
+- **Verificación:** `curl http://localhost:3000/_next/static/css/app/layout.css` devolvía HTML; `curl http://localhost:3002/_next/static/css/app/layout.css` devolvía CSS válido. Esto descartó cualquier problema de config (tailwind.config.ts, postcss.config.mjs, globals.css, layout.tsx) — todo estaba bien.
+- **Fix:**
+  1. Matar todos los procesos node escuchando en :3000-:3002 (`Stop-Process` por puerto).
+  2. `rm -rf .next/` para limpiar cache stale.
+  3. `npm run dev` (arranca limpio en :3000).
+  4. Re-correr `npm run screenshots`.
+- **Lección:** Antes de tocar config de Tailwind, verificar que el dev server al que apuntan los screenshots realmente está sirviendo el CSS compilado. Validación rápida: `curl <CSS_URL>` debe devolver `/*! ... css-loader ... globals.css */` y pesar decenas de KB. Si devuelve HTML, hay un dev server fantasma o un build corrupto.
+- **Prevención:** Considerar añadir al script `screenshots.ts` un check explícito de `Content-Type: text/css` sobre la primera URL de stylesheet del HTML antes de capturar — falla rápido en lugar de generar 21 PNGs inútiles.
 
 ---
 
@@ -77,4 +88,4 @@
 
 ---
 
-*Última actualización: 2026-04-27 — D-003 revisada y D-005 agregada.*
+*Última actualización: 2026-04-27 — E-001 agregado (CSS no cargaba por dev server fantasma).*
