@@ -13,6 +13,7 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { cn, formatPanamaTime, shortTime } from "@/lib/utils";
 import { fetchWithFallback } from "@/lib/data/client-fetch";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { CHANGE_EVENT, loadSelectedEvent } from "@/lib/event-selection";
 import type {
   AlertRow,
   EventRow,
@@ -33,25 +34,20 @@ export default function EnVivoPage() {
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"ok" | "warn" | "info">("ok");
 
+  // `reloadKey` se incrementa cuando otro componente cambia el evento
+  // seleccionado (CustomEvent en window). Forzamos el useEffect de fetch.
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setReloadKey((k) => k + 1);
+    window.addEventListener(CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, []);
+
   useEffect(() => {
     let canceled = false;
     (async () => {
-      const eventRes = await fetchWithFallback<EventRow>(
-        "event",
-        async (c) => {
-          const { data, error } = await c
-            .from("events")
-            .select("*")
-            .eq("status", "active")
-            .order("date", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (error) throw error;
-          if (!data) throw new Error("no active event");
-          return data as EventRow;
-        },
-        mockEvent
-      );
+      const eventRes = await loadSelectedEvent();
 
       const venuesRes = await fetchWithFallback<VenueRow[]>(
         "venues",
@@ -69,7 +65,7 @@ export default function EnVivoPage() {
           const { data, error } = await c
             .from("checklist_items")
             .select("*")
-            .eq("event_id", eventRes.data.id);
+            .eq("event_id", eventRes.event.id);
           if (error) throw error;
           return (data ?? []) as ChecklistItemRow[];
         },
@@ -82,7 +78,7 @@ export default function EnVivoPage() {
           const { data, error } = await c
             .from("alerts")
             .select("*")
-            .eq("event_id", eventRes.data.id)
+            .eq("event_id", eventRes.event.id)
             .order("time", { ascending: false })
             .limit(50);
           if (error) throw error;
@@ -92,7 +88,7 @@ export default function EnVivoPage() {
       );
 
       if (canceled) return;
-      setEvent(eventRes.data);
+      setEvent(eventRes.event);
       setEventSource(eventRes.source);
       setVenues(venuesRes.data);
       setChecklist(checklistRes.data);
@@ -101,7 +97,7 @@ export default function EnVivoPage() {
     return () => {
       canceled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   // Realtime subscription a alertas: cualquier INSERT desde otro cliente o
   // desde nuestro propio addAlert se refleja al instante.

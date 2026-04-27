@@ -1,13 +1,18 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/section-header";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { getActiveEvent, getVenues, getChecklistItems } from "@/lib/data/queries";
-import { shortTime } from "@/lib/utils";
-
-function formatEventDate(iso: string) {
-  const d = new Date(iso + "T12:00:00");
-  return d.toLocaleDateString("es-PA", { weekday: "long", day: "numeric", month: "long" });
-}
+import { EventSelector } from "@/components/home/event-selector";
+import { fetchWithFallback } from "@/lib/data/client-fetch";
+import { mockEvent, mockVenues, mockChecklistItems } from "@/lib/mock-data";
+import { formatEventDate, shortTime } from "@/lib/utils";
+import {
+  CHANGE_EVENT,
+  resolveSelectedEvent,
+} from "@/lib/event-selection";
+import type { EventRow, VenueRow, ChecklistItemRow } from "@/types/database";
 
 const moduleCards = [
   {
@@ -37,25 +42,118 @@ const quickLinks = [
   { href: "/admin/reportes", emoji: "📊", label: "Reportes" },
 ];
 
-export default async function Home() {
-  const [{ data: event }, { data: venues }] = await Promise.all([
-    getActiveEvent(),
-    getVenues(),
-  ]);
-  const { data: checklist } = await getChecklistItems(event.id);
+export default function Home() {
+  const [events, setEvents] = useState<EventRow[]>([mockEvent]);
+  // `selectedId === null` significa "todavía no resolvimos qué evento
+  // mostrar" — los efectos que dependen del id deben skipear hasta que
+  // el primer fetch lo asigne. Así evitamos disparar
+  // `event_id=eq.<mock-id>` contra Postgres (22P02 — la columna es uuid).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [venues, setVenues] = useState<VenueRow[]>(mockVenues);
+  const [checklist, setChecklist] = useState<ChecklistItemRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const overallMontaje = checklist.length === 0
-    ? 0
-    : Math.round((checklist.filter((i) => i.completed).length / checklist.length) * 100);
-  const checkInPct = Math.round((event.checked_in / Math.max(1, event.tickets_sold)) * 100);
-  const activeVenue = venues.find((v) => v.id === event.active_venue_id);
-  const isLive = event.status === "active";
+  // 1) Cargar la lista de eventos + venues una sola vez al montar.
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      const [eventsRes, venuesRes] = await Promise.all([
+        fetchWithFallback<EventRow[]>(
+          "events",
+          async (c) => {
+            const { data, error } = await c
+              .from("events")
+              .select("*")
+              .order("date", { ascending: true });
+            if (error) throw error;
+            return (data ?? []) as EventRow[];
+          },
+          [mockEvent]
+        ),
+        fetchWithFallback<VenueRow[]>(
+          "venues",
+          async (c) => {
+            const { data, error } = await c
+              .from("venues")
+              .select("*")
+              .order("order", { ascending: true });
+            if (error) throw error;
+            return (data ?? []) as VenueRow[];
+          },
+          mockVenues
+        ),
+      ]);
+      if (canceled) return;
+
+      const list = eventsRes.data;
+      setEvents(list);
+      setVenues(venuesRes.data);
+
+      const initial = resolveSelectedEvent(list);
+      setSelectedId(initial ? initial.id : null);
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, []);
+
+  // 2) Cuando cambia el evento seleccionado, refetch del checklist
+  //    filtrado. Skip mientras `selectedId` siga `null`.
+  useEffect(() => {
+    if (!selectedId) return;
+    let canceled = false;
+    (async () => {
+      setLoading(true);
+      const checklistRes = await fetchWithFallback<ChecklistItemRow[]>(
+        "checklist",
+        async (c) => {
+          const { data, error } = await c
+            .from("checklist_items")
+            .select("*")
+            .eq("event_id", selectedId);
+          if (error) throw error;
+          return (data ?? []) as ChecklistItemRow[];
+        },
+        mockChecklistItems
+      );
+      if (canceled) return;
+      setChecklist(checklistRes.data);
+      setLoading(false);
+    })();
+    return () => {
+      canceled = true;
+    };
+  }, [selectedId]);
+
+  // 3) Suscripción al cambio de evento desde el selector.
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (id) setSelectedId(id);
+    };
+    window.addEventListener(CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, []);
+
+  const selected = useMemo(
+    () => events.find((e) => e.id === selectedId) ?? events[0] ?? mockEvent,
+    [events, selectedId]
+  );
+  const overallMontaje =
+    checklist.length === 0
+      ? 0
+      : Math.round((checklist.filter((i) => i.completed).length / checklist.length) * 100);
+  const checkInPct = Math.round(
+    (selected.checked_in / Math.max(1, selected.tickets_sold)) * 100
+  );
+  const activeVenue = venues.find((v) => v.id === selected.active_venue_id);
+  const isLive = selected.status === "active";
 
   return (
     <div className="pb-6">
       <PageHeader
         accent="Filthy Friday OPS"
-        title={formatEventDate(event.date)}
+        title={formatEventDate(selected.date)}
         subtitle="Centro de operaciones"
         right={
           isLive ? (
@@ -67,8 +165,15 @@ export default async function Home() {
         }
       />
 
-      {isLive && activeVenue && (
-        <section className="px-4">
+      <section className="px-4">
+        <EventSelector
+          events={events.map((e) => ({ id: e.id, date: e.date, status: e.status }))}
+          selectedId={selectedId ?? ""}
+        />
+      </section>
+
+      {activeVenue && (
+        <section className="mt-4 px-4">
           <Link
             href="/operacion/en-vivo"
             className="block rounded-2xl border border-white/10 bg-gradient-to-br from-[#FA2BA9]/15 via-[#161718] to-[#161718] p-4 transition-colors hover:border-[#FA2BA9]/50"
@@ -76,7 +181,9 @@ export default async function Home() {
             <div className="flex items-center gap-4">
               <span className="text-4xl leading-none">{activeVenue.emoji}</span>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9DFF60]">Fiesta activa</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9DFF60]">
+                  {isLive ? "Fiesta activa" : "Venue protagónico"}
+                </p>
                 <p className="mt-0.5 truncate text-base font-bold">{activeVenue.name}</p>
                 <p className="text-xs text-dim">
                   {shortTime(activeVenue.start_time)}–{shortTime(activeVenue.end_time)} · {activeVenue.location}
@@ -85,9 +192,13 @@ export default async function Home() {
               <ProgressRing value={overallMontaje} size={56} stroke={5} />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/10 pt-3">
-              <Stat label="Tickets" value={event.tickets_sold.toString()} />
-              <Stat label="Check-in" value={`${event.checked_in}`} hint={`${checkInPct}%`} color="text-[#9DFF60]" />
-              <Stat label="Montaje" value={`${overallMontaje}%`} color="text-[#FA2BA9]" />
+              <Stat label="Tickets" value={selected.tickets_sold.toString()} />
+              <Stat label="Check-in" value={`${selected.checked_in}`} hint={`${checkInPct}%`} color="text-[#9DFF60]" />
+              <Stat
+                label="Montaje"
+                value={loading ? "…" : `${overallMontaje}%`}
+                color="text-[#FA2BA9]"
+              />
             </div>
           </Link>
         </section>

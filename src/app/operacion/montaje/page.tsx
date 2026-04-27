@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { mockVenues, mockChecklistItems, mockEvent } from "@/lib/mock-data";
+import { mockVenues, mockChecklistItems } from "@/lib/mock-data";
 import { Check, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchWithFallback } from "@/lib/data/client-fetch";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { CHANGE_EVENT, loadSelectedEvent } from "@/lib/event-selection";
 import type { VenueRow, ChecklistItemRow } from "@/types/database";
 
 type Item = { id: string; task: string; completed: boolean; completed_by: string | null };
@@ -16,6 +17,13 @@ export default function MontajePage() {
   const [activeVenue, setActiveVenue] = useState<string | null>(null);
   const [items, setItems] = useState<Record<string, Item[]>>({});
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setReloadKey((k) => k + 1);
+    window.addEventListener(CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, []);
 
   useEffect(() => {
     let canceled = false;
@@ -30,15 +38,7 @@ export default function MontajePage() {
         mockVenues
       );
 
-      const eventRes = await fetchWithFallback(
-        "event",
-        async (c) => {
-          const { data, error } = await c.from("events").select("id").eq("status", "active").limit(1).maybeSingle();
-          if (error) throw error;
-          return data?.id ?? mockEvent.id;
-        },
-        mockEvent.id
-      );
+      const eventRes = await loadSelectedEvent();
 
       const checklistRes = await fetchWithFallback<(ChecklistItemRow & { task: string })[]>(
         "checklist",
@@ -46,7 +46,7 @@ export default function MontajePage() {
           const { data, error } = await c
             .from("checklist_items")
             .select("*, checklist_templates(task, order)")
-            .eq("event_id", eventRes.data);
+            .eq("event_id", eventRes.event.id);
           if (error) throw error;
           type Joined = ChecklistItemRow & { checklist_templates: { task: string; order: number } | null };
           const rows = (data ?? []) as unknown as Joined[];
@@ -89,7 +89,7 @@ export default function MontajePage() {
     return () => {
       canceled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const current = useMemo<Item[]>(
     () => (activeVenue ? items[activeVenue] ?? [] : []),

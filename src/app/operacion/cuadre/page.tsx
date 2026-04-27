@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { mockEvent } from "@/lib/mock-data";
-import { fetchWithFallback } from "@/lib/data/client-fetch";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { CHANGE_EVENT, loadSelectedEvent } from "@/lib/event-selection";
 import type { EventRow } from "@/types/database";
 import { cn } from "@/lib/utils";
 
@@ -36,34 +36,27 @@ export default function CuadrePage() {
   const [state, setState] = useState<FormState>(fromEvent(mockEvent));
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const onChange = () => setReloadKey((k) => k + 1);
+    window.addEventListener(CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, []);
 
   useEffect(() => {
     let canceled = false;
     (async () => {
-      const eventRes = await fetchWithFallback<EventRow>(
-        "event",
-        async (c) => {
-          const { data, error } = await c
-            .from("events")
-            .select("*")
-            .eq("status", "active")
-            .order("date", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (error) throw error;
-          if (!data) throw new Error("no active event");
-          return data as EventRow;
-        },
-        mockEvent
-      );
+      const eventRes = await loadSelectedEvent();
       if (canceled) return;
-      setEventId(eventRes.data.id);
-      setState(fromEvent(eventRes.data));
+      setEventId(eventRes.event.id);
+      setState(fromEvent(eventRes.event));
+      setSavedAt(null);
     })();
     return () => {
       canceled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const noShow = Math.max(0, state.ticketsSold - state.checkedIn);
   const checkInPct = state.ticketsSold > 0 ? (state.checkedIn / state.ticketsSold) * 100 : 0;

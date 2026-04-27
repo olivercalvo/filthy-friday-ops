@@ -108,4 +108,34 @@
 
 ---
 
-*Última actualización: 2026-04-27 — E-003 agregado (PGRST205: tablas faltantes en Supabase + lección sobre `head:true`).*
+### D-006 — Selección de evento via localStorage + CustomEvent
+- **Fecha:** 2026-04-27
+- **Decisión:** El evento seleccionado vive en `localStorage` (`ff_selected_event_id`) y los cambios se propagan dentro del tab vía un `CustomEvent` en `window` (`ff:event-changed`). No se usó URL param ni cookie.
+- **Razones:**
+  - Persiste entre navegaciones cliente sin refresh ni server roundtrip.
+  - Los módulos de Operación (montaje, en-vivo, cuadre) son client components; leer `localStorage` es trivial.
+  - La alternativa con cookie + Server Action se descartó porque el Home necesita reaccionar inmediatamente al cambio sin un `router.refresh()`.
+- **Implicación:** No hay sync entre tabs (sería `storage` event); aceptable porque el caso de uso es un dispositivo por usuario durante el evento.
+
+---
+
+## Errores
+
+### E-004 — Race condition entre fetch de events y fetch de checklist por id
+- **Fecha:** 2026-04-27
+- **Síntoma:** Al cargar el Home aparecía un 400 en `/rest/v1/checklist_items?event_id=eq.e1` con `code 22P02 invalid input syntax for type uuid: "e1"`.
+- **Causa:** El estado inicial de `selectedId` era `mockEvent.id = "e1"` y el `useEffect` del checklist disparaba con ese valor antes de que el `useEffect` que carga la lista de events lo sobreescribiera con el id real.
+- **Fix:** `selectedId` arranca en `null` y el `useEffect` del checklist hace early return mientras siga `null`. El primer setSelectedId real lo activa.
+- **Lección:** Cuando un efecto B depende de estado seteado por un efecto A en el mismo mount, el initial value de ese estado tiene que ser un sentinel "not ready" (null/undefined) y B tiene que gatear, o A y B deben fusionarse.
+
+---
+
+### F-001 — Calendar mismatch en seed de eventos
+- **Fecha:** 2026-04-27
+- **Síntoma:** El usuario pidió "Viernes 18 de abril 2026", "Viernes 25 de abril 2026" y "Viernes 2 de mayo 2026" como seed.
+- **Hallazgo:** En el calendario real de 2026 esas fechas son sábados, no viernes. Los viernes equivalentes son Apr 17, Apr 24 y May 1.
+- **Decisión interina:** El seed usa las fechas literales que dio el usuario. El UI muestra "Sábado" porque `Date.toLocaleDateString('es-PA',...)` no miente sobre el día. Pendiente de confirmación del usuario para ajustar a las fechas reales de viernes si quiere mantener el patrón.
+
+---
+
+*Última actualización: 2026-04-27 — D-006 + E-004 + F-001 (event selector y calendar mismatch).*

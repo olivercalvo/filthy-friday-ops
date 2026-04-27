@@ -86,24 +86,49 @@ insert into liquor_catalog (name, category, unit, stock, min_stock, icon) values
   ('Red Bull',           'mixer',   'caja',    15,  8, '🍹'),
   ('Coca-Cola',          'mixer',   'caja',    20, 10, '🍹');
 
--- Today's event
-insert into events (id, date, status, tickets_sold, checked_in, vip_total, vip_cash, vip_card, vip_bottles, merch_units, merch_total, active_venue_id)
-values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', current_date, 'active', 412, 287, 4850, 2100, 2750, 18, 64, 1280, '22222222-2222-2222-2222-222222222222')
-on conflict (id) do update set
-  tickets_sold = excluded.tickets_sold,
-  checked_in = excluded.checked_in,
-  vip_total = excluded.vip_total,
-  active_venue_id = excluded.active_venue_id;
+-- Events (3 semanas tipo: completed → active → draft)
+-- IDs estables para que el seed sea idempotente y los tests puedan referenciarlos.
+delete from alerts;
+delete from checklist_items;
+delete from events;
 
--- Instantiate checklist items for today's event
-delete from checklist_items where event_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
-insert into checklist_items (event_id, template_id, venue_id, completed)
-select 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', t.id, t.venue_id, false
+insert into events (id, date, status, tickets_sold, checked_in, vip_total, vip_cash, vip_card, vip_bottles, merch_units, merch_total, active_venue_id) values
+  -- Evento pasado (cerrado con números finales)
+  ('e1180426-eeee-eeee-eeee-eeeeeeeeeeee', '2026-04-18', 'completed', 478, 451, 6120, 2400, 3720, 24, 87, 1740, '33333333-3333-3333-3333-333333333333'),
+  -- Evento activo (default selection)
+  ('e2250426-eeee-eeee-eeee-eeeeeeeeeeee', '2026-04-25', 'active',    412, 287, 4850, 2100, 2750, 18, 64, 1280, '22222222-2222-2222-2222-222222222222'),
+  -- Evento futuro (draft, números en cero)
+  ('e3020526-eeee-eeee-eeee-eeeeeeeeeeee', '2026-05-02', 'draft',       0,   0,    0,    0,    0,  0,  0,    0, '11111111-1111-1111-1111-111111111111');
+
+-- Checklist items por evento
+-- Apr 18 (completed) — todo en true
+insert into checklist_items (event_id, template_id, venue_id, completed, completed_at, completed_by)
+select 'e1180426-eeee-eeee-eeee-eeeeeeeeeeee', t.id, t.venue_id, true,
+       timestamp '2026-04-18 09:30:00' + (random() * interval '6 hours'),
+       (array['Diana','Rey','Carlos M.','Luis R.','Martina'])[1 + floor(random()*5)::int]
 from checklist_templates t;
 
--- Seed a couple of alerts
-delete from alerts where event_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+-- Apr 25 (active) — mix realista
+insert into checklist_items (event_id, template_id, venue_id, completed, completed_at, completed_by)
+select 'e2250426-eeee-eeee-eeee-eeeeeeeeeeee', t.id, t.venue_id,
+       case when random() < 0.55 then true else false end,
+       case when random() < 0.55 then timestamp '2026-04-25 10:00:00' + (random() * interval '4 hours') else null end,
+       case when random() < 0.55 then (array['Diana','Rey','Carlos M.','Luis R.','Martina'])[1 + floor(random()*5)::int] else null end
+from checklist_templates t;
+
+-- May 2 (draft) — todo pendiente
+insert into checklist_items (event_id, template_id, venue_id, completed)
+select 'e3020526-eeee-eeee-eeee-eeeeeeeeeeee', t.id, t.venue_id, false
+from checklist_templates t;
+
+-- Alertas del evento activo (lo único que se ve en En Vivo por default)
 insert into alerts (event_id, message, type, venue_id) values
-  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Check-in superó 250 asistentes en Blue Coconut', 'ok',   '22222222-2222-2222-2222-222222222222'),
-  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Stock de Corona bajo en Aqua Lounge — enviar refuerzo', 'warn', '33333333-3333-3333-3333-333333333333'),
-  ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'Montaje Casa Papaya completado', 'ok',   '11111111-1111-1111-1111-111111111111');
+  ('e2250426-eeee-eeee-eeee-eeeeeeeeeeee', 'Check-in superó 250 asistentes en Blue Coconut',           'ok',   '22222222-2222-2222-2222-222222222222'),
+  ('e2250426-eeee-eeee-eeee-eeeeeeeeeeee', 'Stock de Corona bajo en Aqua Lounge — enviar refuerzo',    'warn', '33333333-3333-3333-3333-333333333333'),
+  ('e2250426-eeee-eeee-eeee-eeeeeeeeeeee', 'Montaje Casa Papaya completado',                            'ok',   '11111111-1111-1111-1111-111111111111');
+
+-- Alertas del evento cerrado (para que la vista "Cuadre" del completed
+-- tenga algo que mostrar si el usuario lo selecciona)
+insert into alerts (event_id, message, type, venue_id) values
+  ('e1180426-eeee-eeee-eeee-eeeeeeeeeeee', 'Evento cerrado — todos los venues finalizaron en horario', 'ok',   null),
+  ('e1180426-eeee-eeee-eeee-eeeeeeeeeeee', 'Cuadre VIP final: $6,120 (24 botellas)',                    'info', null);

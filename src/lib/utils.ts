@@ -5,6 +5,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Capitaliza la primera letra. `toLocaleDateString('es-PA')` devuelve
+// "viernes, 25 de abril" en minúsculas; el spec del Home pide la inicial
+// en mayúscula.
+export function capitalizeFirst(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// "2026-04-25" → "Viernes, 25 de abril" (formato del Home).
+// Usa T12:00:00 para evitar que el offset de TZ haga retroceder un día.
+export function formatEventDate(iso: string): string {
+  const d = new Date(iso + "T12:00:00");
+  return capitalizeFirst(
+    d.toLocaleDateString("es-PA", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    })
+  );
+}
+
 // Recorta la fracción de segundos de un `time` SQL ("13:30:00" → "13:30").
 // Postgres devuelve los `time without time zone` en formato HH:MM:SS, pero
 // para el UI sólo queremos HH:MM.

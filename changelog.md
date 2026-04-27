@@ -4,6 +4,53 @@ Historial de versiones. Formato: [Keep a Changelog](https://keepachangelog.com/)
 
 ---
 
+## [0.3.0] — 2026-04-27
+
+### Added
+- **Selector de evento en Home** (`src/components/home/event-selector.tsx`).
+  Lista todas las filas de `events` ordenadas por fecha, con badge de
+  status (Activo / Borrador / Cerrado) y picker nativo del OS (mejor
+  UX en mobile que un dropdown custom).
+- **Helper de selección compartido** (`src/lib/event-selection.ts`):
+  - `getStoredEventId / setStoredEventId` — fuente de verdad en
+    `localStorage` (`ff_selected_event_id`).
+  - `pickDefaultEvent` — prioriza `active` → próximo futuro → último
+    pasado → cualquier evento existente.
+  - `loadSelectedEvent` — wrapper async que las páginas de Operación
+    consumen para resolver el evento actual.
+- `formatEventDate` y `capitalizeFirst` en `src/lib/utils.ts` (la fecha
+  "Sábado, 25 de abril" se renderiza igual en todas las páginas).
+- Script `scripts/reseed-events.ts` para reaplicar la sección de eventos
+  contra el proyecto Supabase usando el anon key.
+- Script `scripts/verify-event-selector.ts` (7 checks: default, persist,
+  cambio en Home, propagación a /operacion/cuadre).
+
+### Changed
+- **`src/app/page.tsx`**: Home pasa de Server Component a Client
+  Component. Carga la lista completa de events + venues, resuelve el
+  evento por default, fetchea el checklist filtrado y reacciona al
+  CustomEvent `ff:event-changed`. Title del header usa la fecha del
+  evento seleccionado, no `today`.
+- **Operación (montaje, en-vivo, cuadre)**: las tres páginas ahora
+  llaman a `loadSelectedEvent()` en vez de hardcodear `status='active'`.
+  Re-fetchean cuando llega el `ff:event-changed`.
+- **`supabase/seed.sql`**: la sección de eventos se reescribió. En vez
+  de un único evento con `current_date`, ahora hay tres con UUIDs
+  estables — Apr 18 completed, Apr 25 active (default), May 2 draft —
+  más sus checklist_items (todo true / mix / todo false) y alertas.
+
+### Notes
+- Previous hash: 28693c5 (docs: backlog Fase 2)
+- `npm run build` ✅ 11 rutas estáticas, sin errores de tipo.
+- Verificación: `npx tsx scripts/verify-supabase.ts` 12/12, `npx tsx
+  scripts/verify-event-selector.ts` 7/7.
+- Calendar mismatch: 2026-04-18, 2026-04-25 y 2026-05-02 son **sábados**
+  en el calendario real — el spec del usuario los nombra como "Viernes"
+  pero las fechas dadas son sábados. Documentado en findings.md para
+  confirmación; el seed usa los días literales que dio el usuario.
+
+---
+
 ## [0.2.0] — 2026-04-27
 
 ### Changed

@@ -96,6 +96,27 @@
 
 ---
 
+## FASE 4.2 — MULTI-EVENT (2026-04-27) ✅
+
+### Selector de evento en Home
+- [x] Helper `src/lib/event-selection.ts` (localStorage + CustomEvent + default-pick)
+- [x] `EventSelector` (`src/components/home/event-selector.tsx`) con select nativo y badges de status
+- [x] Refactor de `src/app/page.tsx` a Client Component que muestra la fecha del evento elegido
+- [x] Default = evento `active` → próximo futuro → último pasado
+
+### Propagación a Operación
+- [x] `montaje/page.tsx` lee evento desde `loadSelectedEvent`
+- [x] `en-vivo/page.tsx` ídem (Realtime sigue keyed por `event.id`)
+- [x] `cuadre/page.tsx` ídem
+- [x] Re-fetch en respuesta a `ff:event-changed`
+
+### Datos
+- [x] `supabase/seed.sql` con 3 eventos (Apr 18 completed / Apr 25 active / May 2 draft)
+- [x] `scripts/reseed-events.ts` para reaplicar la sección eventos sin re-correr migración
+- [x] Verificación `scripts/verify-event-selector.ts` 7/7 OK
+
+---
+
 ## FASE 4.1 — RESPONSIVE + HOME REDESIGN (2026-04-27) ✅
 
 ### Layout responsive (3 breakpoints)
@@ -168,4 +189,4 @@
 - **Bloqueos:** falta credenciales Supabase para ejecutar migración + seed y conectar datos reales. Falta proyecto Vercel para Fase 5. Falta Playwright MCP para verificación visual automatizada.
 - **Próximo:** el usuario provee credenciales Supabase → correr migración + seed → swap mock imports por queries reales → conectar Realtime al feed de alertas y checklist.
 
-*Última actualización: 2026-04-27 — Fase 4.1 aplicada (layout responsive + Home rediseñado).*
+*Última actualización: 2026-04-27 — Fase 4.2 aplicada (selector de evento + propagación a Operación).*
