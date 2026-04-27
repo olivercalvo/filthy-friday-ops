@@ -135,6 +135,31 @@
 
 ---
 
+## BACKLOG — Fase 2 (post-MVP)
+
+> Especificación detallada en `productdesign.md` §7. **No implementar hasta cierre del MVP.**
+
+### Sesión persistente (prerrequisito de modo offline)
+- [ ] Habilitar Supabase Auth (sign-in mínimo: email + password o magic link)
+- [ ] Configurar refresh token de larga duración (custom JWT expiry / refresh perpetuo cliente-side)
+- [ ] Pantalla de login + estado "logueado" en layout
+- [ ] Logout manual desde un menú de usuario
+- [ ] Tests: login → cerrar/reabrir 24h con red → sesión activa
+- [ ] Tests: login → cerrar/reabrir sin red → sesión activa con cache
+- [ ] Tests: logout manual → próxima apertura pide credenciales
+
+### Modo offline con sincronización
+- [ ] Capa de cache en IndexedDB del evento activo (venues, checklist_items, crew, inventory, liquor_catalog, alerts, event)
+- [ ] Hidratar las páginas desde IndexedDB en primer paint, refrescar contra Supabase si hay red
+- [ ] Cola local de mutaciones (toggle de checklist, INSERT de alertas, updates de inventario, updates de cuadre) con `updated_at` cliente-side
+- [ ] Listener `navigator.onLine` + evento `online` que dispara flush de la cola
+- [ ] Resolución de conflictos por last-write-wins usando el `updated_at` encolado
+- [ ] Indicador de estado en layout: `Offline — N cambios pendientes` / `Sincronizando…` / `Sincronizado ✓`
+- [ ] Botón "Forzar sincronización" en una pantalla de Settings
+- [ ] Tests: simular offline → mutación → verificar IndexedDB
+- [ ] Tests: reconexión → verificar Supabase recibe los writes
+- [ ] Tests: conflict resolution con dos toggles del mismo item en distintas redes
+
 ---
 
 ## Estado actual — 2026-04-27

@@ -302,4 +302,55 @@ Por ahora solo UI (la generación es fase futura):
 
 ---
 
-*Última actualización: 2026-04-10 — inicialización.*
+## 7. Backlog Fase 2 (post-MVP)
+
+> Requerimientos confirmados para la siguiente iteración. **No implementar todavía** — documentado para planificación.
+
+### 7.1 Modo offline con sincronización
+
+**Contexto:** la fiesta se desarrolla en islas de Bocas del Toro donde la conectividad celular y WiFi es inestable. El equipo no puede depender de tener red continua durante el evento.
+
+**Comportamiento esperado:**
+- Al cargar la app con internet, se cachea toda la data del evento activo en **IndexedDB** (venues, checklist_items, crew, inventory, liquor_catalog, alerts, evento mismo).
+- Si se pierde conexión, la app sigue funcionando con la data local cacheada — el usuario no debería notar diferencia funcional.
+- Las acciones que se hagan offline se guardan en una **cola local de mutaciones** (checklist toggles, INSERT de alertas, updates de inventario, updates de cuadre).
+- Al recuperar conexión (escuchar `navigator.onLine` + evento `online`), arranca **sincronización automática** que vacía la cola contra Supabase.
+- **Resolución de conflictos:** gana el último timestamp (last-write-wins). Cada mutación encolada lleva `updated_at` local; el sync lo respeta y descarta versiones antiguas.
+
+**UI / indicadores:**
+- Badge de estado en el layout (al lado del OfflinePill actual o reemplazándolo):
+  - `Offline — N cambios pendientes` (cuando no hay red y hay cola)
+  - `Sincronizando…` (durante el flush de la cola)
+  - `Sincronizado ✓` (última sync OK, fade-out tras 3s)
+- Botón discreto de "Forzar sincronización" en una pantalla de Settings (fallback manual).
+
+**Tests requeridos:**
+- Simular `navigator.onLine = false` → verificar que mutaciones entran a la cola en IndexedDB.
+- Simular reconexión → verificar que la cola se vacía y aparece en Supabase.
+- Verificar que un toggle hecho offline + un toggle hecho online sobre el mismo item resuelve por timestamp.
+- Confirmar que la primera carga sin red usa exclusivamente la data en IndexedDB.
+
+**Prerrequisito:** §7.2 (sesión persistente) — sin ella, perder red al expirar el token deja la app inutilizable.
+
+---
+
+### 7.2 Sesión persistente
+
+**Comportamiento esperado:**
+- La sesión del usuario **NO expira automáticamente**.
+- El logout solo ocurre cuando el usuario lo hace manualmente desde la app.
+- Configurar Supabase Auth con refresh token de larga duración (custom JWT expiry o flujo de refresh perpetuo cliente-side).
+- Flujo típico: el usuario se loguea una sola vez con WiFi de oficina/hotel y el dispositivo queda activo durante toda la operación, incluso si la app se cierra y se reabre, incluso sin red al reabrir.
+
+**Razón:**
+- En las islas de Bocas no hay red estable; un token expirado offline equivaldría a perder acceso a la app entera.
+- Es **prerrequisito de §7.1** (modo offline) — el usuario tiene que poder seguir trabajando aunque el dispositivo lleve horas sin conexión.
+
+**Tests requeridos:**
+- Login → cerrar app → reabrir 24h después con red → sesión activa.
+- Login → cerrar app → reabrir sin red → sesión activa, app funcional con cache.
+- Logout manual → confirmar que la sesión sí termina y la siguiente apertura pide credenciales.
+
+---
+
+*Última actualización: 2026-04-27 — backlog Fase 2 (offline + sesión persistente).*
