@@ -138,4 +138,23 @@
 
 ---
 
-*Última actualización: 2026-04-27 — D-006 + E-004 + F-001 (event selector y calendar mismatch).*
+### E-005 — CSS Tailwind no carga en preview de Vercel (recurrencia de E-001)
+- **Fecha:** 2026-04-27 (segunda manifestación)
+- **Síntoma:** El preview deployment generado por `vercel deploy` (sin `--force`) sirvió HTML plano sin estilos — botones sin radio, sin colores, sin dark theme. El cliente lo reportó al ver el link compartido.
+- **Diferencia con E-001:** E-001 fue local (dev server fantasma + `.next/` corrupto en :3000). E-005 es en infraestructura de Vercel — entre dos deploys consecutivos, la build cache de Vercel quedó inconsistente (manifest del HTML referenciaba un hash de CSS que no coincidía con el archivo CSS realmente desplegado, o el archivo CSS no se incluyó en el bundle del deploy).
+- **Causa raíz probable:** Vercel reusa cache de build de Next.js (`.next/cache`) entre deploys para acelerar incremental compiles. Cuando hay cambios grandes (en este caso un Home rediseñado en `6320113`), esa cache puede dejar artefactos de Tailwind/PostCSS de un build previo que no corresponden al nuevo manifest. Resultado: HTML pide `/_next/static/css/<oldHash>.css` que ya no existe, o que existe pero corresponde a clases generadas para un árbol distinto.
+- **Verificación post-fix:** El nuevo preview (`filthy-friday-r3f3toyg3`) y la prod (`filthy-friday-ops.vercel.app`) sirven `c09c1f446ea635c8.css` con `Content-Type: text/css` y 31 253 bytes — Tailwind compilado correctamente.
+- **Fix aplicado (parche):**
+  1. `rm -rf .next/` local (limpia state desarrollo, no afecta a Vercel).
+  2. `npm run build` para verificar que compila clean.
+  3. `vercel deploy --force` — la flag `--force` instruye a Vercel a ignorar la build cache y rebuildar desde cero. Esto es lo que realmente arregló el bug en el lado servidor.
+- **Fix permanente — propuestas (escoger una o combinarlas):**
+  1. **Smoke test post-deploy en SOP-002.** Después de `vercel deploy`, hacer `curl -I` sobre la primera URL `/_next/static/css/*.css` referenciada en el HTML del root y exigir `HTTP 200` + `Content-Type: text/css` + `Content-Length > 10000`. Falla rápido y obliga a `--force` antes de compartir el link. *Costo: 30 segundos extra por deploy. Beneficio: nunca volvemos a compartir un preview roto.*
+  2. **Alias de npm con `--force` siempre.** Agregar `"deploy:preview": "vercel deploy --force"` y `"deploy:prod": "vercel deploy --prod --force"` en `package.json`. *Costo: cada deploy paga full build (~30-60s extra). Beneficio: elimina la clase entera de bug de cache. Recomendable mientras el proyecto sea chico.*
+  3. **Desactivar build cache de Vercel del proyecto.** Setear `VERCEL_FORCE_NO_BUILD_CACHE=1` en project env, o desactivar build cache en Settings → General. *Costo: builds más lentos siempre. Beneficio: 0 bugs de cache. No recomendado a largo plazo.*
+- **Recomendación:** Implementar (1) + (2) juntos. (1) protege contra regresión incluso si alguien deploya sin --force; (2) elimina la causa por default. (3) queda como nuclear option si vuelve a pasar.
+- **Lección:** En Vercel, "deploy ready" no implica "deploy correcto". El status `Ready` solo confirma que el build terminó — no que los assets estén consistentes con el HTML. Cualquier deploy compartido externamente debe pasar un smoke test de CSS antes.
+
+---
+
+*Última actualización: 2026-04-27 — E-005 agregado (CSS bug recurrente en preview de Vercel).*

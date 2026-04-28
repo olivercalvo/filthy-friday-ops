@@ -4,6 +4,41 @@ Historial de versiones. Formato: [Keep a Changelog](https://keepachangelog.com/)
 
 ---
 
+## [0.4.0] — 2026-04-27
+
+### Added
+- **Producción live** en https://filthy-friday-ops.vercel.app
+  (alias estable, deploy `dpl_9egjTDJhwaH2WkaM44gZsGgnaPri` corriendo el
+  commit `6320113` desde `develop`).
+- **Protection Bypass token** generado para compartir previews con
+  externos sin cuenta Vercel (project-wide, scope `automation-bypass`).
+
+### Changed
+- **SSO Protection reconfigurado**: `ssoProtection.deploymentType` pasa de
+  `all_except_custom_domains` → `preview`. Producción es pública (link
+  compartible por WhatsApp sin token); previews siguen detrás de login
+  Vercel y se desbloquean con el bypass token.
+- **Pre-Deploy checklist corrido retroactivamente**: build ✅, lint ✅,
+  typecheck ✅, smoke test HTTP 200 en las 7 rutas, CSS verificado
+  (`c09c1f446ea635c8.css`, 31 KB, `text/css`). Tests unit/functional/e2e
+  pendientes — infra no armada todavía (backlog).
+
+### Fixed
+- **CSS Tailwind no cargaba en preview** (E-005): build cache de Vercel
+  inconsistente entre deploys → HTML referenciaba un hash de CSS que no
+  existía en el bundle. Resuelto con `rm -rf .next/` + `npm run build`
+  + `vercel deploy --force`. Documentado en `findings.md` con propuesta
+  de fix permanente (smoke test post-deploy + scripts npm con `--force`).
+
+### Notes
+- Previous hash: 6320113 (feat: Home UX overhaul)
+- `main` sigue en `fe3ff77` — merge `develop → main` diferido hasta que
+  el cliente confirme el Home rediseñado en prod.
+- Variables de entorno de Production set (`NEXT_PUBLIC_SUPABASE_URL` +
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`) — mismas credenciales que Preview/Dev.
+
+---
+
 ## [0.3.1] — 2026-04-27
 
 ### Fixed

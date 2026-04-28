@@ -144,15 +144,22 @@
 
 ---
 
-## FASE 5 — TRIGGER
+## FASE 5 — TRIGGER (parcial — prod corriendo desde develop sin merge a main)
 
-- [ ] Crear proyecto en Vercel y conectar a GitHub
-- [ ] Configurar variables de entorno de producción en Vercel
-- [ ] Crear proyecto Supabase de producción + aplicar migraciones
-- [ ] Ejecutar Pre-Deploy checklist (claude.md §5)
-- [ ] Merge `develop` → `main` (con aprobación explícita del usuario)
-- [ ] Verificación post-deploy
-- [ ] Documentar URL de producción en `changelog.md`
+- [x] Crear proyecto en Vercel y conectar a GitHub (`filthy-friday-ops` linkeado)
+- [x] Configurar variables de entorno de producción en Vercel (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Production + Preview + Development)
+- [~] Crear proyecto Supabase de producción + aplicar migraciones (proyecto existe; migraciones aplicadas — pendiente E-003 verificación post-fix)
+- [~] Ejecutar Pre-Deploy checklist (claude.md §5) — corrido retroactivamente para 0.4.0:
+  - [x] build clean · lint clean · typecheck clean
+  - [x] Smoke test 7 rutas en prod → 200
+  - [x] CSS verificado en prod (`c09c1f446ea635c8.css`, 31 KB, `text/css`)
+  - [ ] Tests unit/functional/e2e — **infraestructura no existe**: `/tests/` no creado, no hay `npm run test`. Vitest+Playwright instalados como devDep pero sin specs. Backlog.
+  - [ ] Playwright MCP visual — no conectado en sesión.
+- [ ] Merge `develop` → `main` (**diferido**: espera confirmación del cliente antes de alinear `main` con prod). Producción corre `6320113` mientras `main` sigue en `fe3ff77`.
+- [x] Verificación post-deploy (HTTP 200 en las 7 rutas, sin login en prod, CSS OK)
+- [x] Documentar URL de producción en `changelog.md` (https://filthy-friday-ops.vercel.app)
+- [x] Configurar SSO Protection: producción pública, previews protegidos (`ssoProtection.deploymentType = preview`)
+- [x] Generar Protection Bypass token para previews compartibles
 
 ---
 
@@ -185,8 +192,9 @@
 
 ## Estado actual — 2026-04-27
 
-- **Completado:** Fases 0, 1 (SQL ready), 2 (client + types), 3 (páginas con mock), 4 (branding aplicado), 4.1 (responsive + home redesign).
-- **Bloqueos:** falta credenciales Supabase para ejecutar migración + seed y conectar datos reales. Falta proyecto Vercel para Fase 5. Falta Playwright MCP para verificación visual automatizada.
-- **Próximo:** el usuario provee credenciales Supabase → correr migración + seed → swap mock imports por queries reales → conectar Realtime al feed de alertas y checklist.
+- **Completado:** Fases 0, 1 (SQL ready), 2 (client + types), 3 (páginas con mock), 4 (branding aplicado), 4.1 (responsive + home redesign), 4.2 (multi-event), Fase 5 parcial (prod corriendo en https://filthy-friday-ops.vercel.app desde `develop`).
+- **Bloqueos:** infraestructura de tests (Vitest+Playwright wired) sin armar — backlog. Playwright MCP no conectado para verificación visual.
+- **Pendiente de cliente:** confirmación de Home rediseñado en prod → al OK, mergeamos `develop → main` y alineamos git history.
+- **Próximo técnico:** implementar smoke test post-deploy (E-005 fix permanente) + scripts `npm run deploy:preview` / `deploy:prod` con `--force` por default.
 
-*Última actualización: 2026-04-27 — Fase 4.2 aplicada (selector de evento + propagación a Operación).*
+*Última actualización: 2026-04-27 — Fase 5 parcial: prod live, pendiente merge a main + tests retroactivos.*
