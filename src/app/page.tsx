@@ -153,7 +153,8 @@ export default function Home() {
     <div className="pb-6">
       <PageHeader
         accent="Filthy Friday OPS"
-        title={formatEventDate(selected.date)}
+        title={selectedId ? formatEventDate(selected.date) : ""}
+        loading={!selectedId}
         subtitle="Centro de operaciones"
         right={
           isLive ? (

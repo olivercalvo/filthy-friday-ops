@@ -4,7 +4,7 @@
  *
  * Asume que `venues` y `checklist_templates` ya existen (lo hace el
  * seed completo). Acá sólo refrescamos los eventos del nuevo modelo
- * (Apr 18 completed, Apr 25 active, May 2 draft).
+ * (Apr 17 completed, Apr 24 active, May 1 draft — los viernes reales).
  *
  *   npx tsx scripts/reseed-events.ts
  */
@@ -42,9 +42,9 @@ const VENUE_PAPAYA  = "11111111-1111-1111-1111-111111111111";
 const VENUE_COCONUT = "22222222-2222-2222-2222-222222222222";
 const VENUE_AQUA    = "33333333-3333-3333-3333-333333333333";
 
-const EVT_APR18 = "e1180426-eeee-eeee-eeee-eeeeeeeeeeee";
-const EVT_APR25 = "e2250426-eeee-eeee-eeee-eeeeeeeeeeee";
-const EVT_MAY02 = "e3020526-eeee-eeee-eeee-eeeeeeeeeeee";
+const EVT_APR17 = "e1170426-eeee-eeee-eeee-eeeeeeeeeeee";
+const EVT_APR24 = "e2240426-eeee-eeee-eeee-eeeeeeeeeeee";
+const EVT_MAY01 = "e3010526-eeee-eeee-eeee-eeeeeeeeeeee";
 
 const NAMES = ["Diana", "Rey", "Carlos M.", "Luis R.", "Martina"];
 const pickName = () => NAMES[Math.floor(Math.random() * NAMES.length)];
@@ -71,9 +71,9 @@ async function main() {
   await step(
     "insert events",
     sb.from("events").insert([
-      { id: EVT_APR18, date: "2026-04-18", status: "completed", tickets_sold: 478, checked_in: 451, vip_total: 6120, vip_cash: 2400, vip_card: 3720, vip_bottles: 24, merch_units: 87, merch_total: 1740, active_venue_id: VENUE_AQUA },
-      { id: EVT_APR25, date: "2026-04-25", status: "active",    tickets_sold: 412, checked_in: 287, vip_total: 4850, vip_cash: 2100, vip_card: 2750, vip_bottles: 18, merch_units: 64, merch_total: 1280, active_venue_id: VENUE_COCONUT },
-      { id: EVT_MAY02, date: "2026-05-02", status: "draft",     tickets_sold:   0, checked_in:   0, vip_total:    0, vip_cash:    0, vip_card:    0, vip_bottles:  0, merch_units:  0, merch_total:    0, active_venue_id: VENUE_PAPAYA  },
+      { id: EVT_APR17, date: "2026-04-17", status: "completed", tickets_sold: 478, checked_in: 451, vip_total: 6120, vip_cash: 2400, vip_card: 3720, vip_bottles: 24, merch_units: 87, merch_total: 1740, active_venue_id: VENUE_AQUA },
+      { id: EVT_APR24, date: "2026-04-24", status: "active",    tickets_sold: 412, checked_in: 287, vip_total: 4850, vip_cash: 2100, vip_card: 2750, vip_bottles: 18, merch_units: 64, merch_total: 1280, active_venue_id: VENUE_COCONUT },
+      { id: EVT_MAY01, date: "2026-05-01", status: "draft",     tickets_sold:   0, checked_in:   0, vip_total:    0, vip_cash:    0, vip_card:    0, vip_bottles:  0, merch_units:  0, merch_total:    0, active_venue_id: VENUE_PAPAYA  },
     ])
   );
 
@@ -87,58 +87,58 @@ async function main() {
   }
   console.log(`  · ${templates.length} templates encontrados`);
 
-  // Apr 18 — todo completado
-  const apr18Items = templates.map((t) => ({
-    event_id: EVT_APR18,
+  // Apr 17 — todo completado
+  const apr17Items = templates.map((t) => ({
+    event_id: EVT_APR17,
     template_id: t.id,
     venue_id: t.venue_id,
     completed: true,
-    completed_at: new Date(`2026-04-18T${10 + Math.floor(Math.random() * 6)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}:00-05:00`).toISOString(),
+    completed_at: new Date(`2026-04-17T${10 + Math.floor(Math.random() * 6)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}:00-05:00`).toISOString(),
     completed_by: pickName(),
   }));
-  await step("insert checklist_items (Apr 18 completed)", sb.from("checklist_items").insert(apr18Items));
+  await step("insert checklist_items (Apr 17 completed)", sb.from("checklist_items").insert(apr17Items));
 
-  // Apr 25 — mix realista (~55% completados)
-  const apr25Items = templates.map((t) => {
+  // Apr 24 — mix realista (~55% completados)
+  const apr24Items = templates.map((t) => {
     const done = Math.random() < 0.55;
     return {
-      event_id: EVT_APR25,
+      event_id: EVT_APR24,
       template_id: t.id,
       venue_id: t.venue_id,
       completed: done,
       completed_at: done
-        ? new Date(`2026-04-25T${10 + Math.floor(Math.random() * 4)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}:00-05:00`).toISOString()
+        ? new Date(`2026-04-24T${10 + Math.floor(Math.random() * 4)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}:00-05:00`).toISOString()
         : null,
       completed_by: done ? pickName() : null,
     };
   });
-  await step("insert checklist_items (Apr 25 active mix)", sb.from("checklist_items").insert(apr25Items));
+  await step("insert checklist_items (Apr 24 active mix)", sb.from("checklist_items").insert(apr24Items));
 
-  // May 2 — todo pendiente
-  const may2Items = templates.map((t) => ({
-    event_id: EVT_MAY02,
+  // May 1 — todo pendiente
+  const may1Items = templates.map((t) => ({
+    event_id: EVT_MAY01,
     template_id: t.id,
     venue_id: t.venue_id,
     completed: false,
     completed_at: null,
     completed_by: null,
   }));
-  await step("insert checklist_items (May 2 draft)", sb.from("checklist_items").insert(may2Items));
+  await step("insert checklist_items (May 1 draft)", sb.from("checklist_items").insert(may1Items));
 
   // Alertas
   await step(
-    "insert alerts (Apr 25 active)",
+    "insert alerts (Apr 24 active)",
     sb.from("alerts").insert([
-      { event_id: EVT_APR25, message: "Check-in superó 250 asistentes en Blue Coconut",          type: "ok",   venue_id: VENUE_COCONUT },
-      { event_id: EVT_APR25, message: "Stock de Corona bajo en Aqua Lounge — enviar refuerzo",   type: "warn", venue_id: VENUE_AQUA },
-      { event_id: EVT_APR25, message: "Montaje Casa Papaya completado",                           type: "ok",   venue_id: VENUE_PAPAYA },
+      { event_id: EVT_APR24, message: "Check-in superó 250 asistentes en Blue Coconut",          type: "ok",   venue_id: VENUE_COCONUT },
+      { event_id: EVT_APR24, message: "Stock de Corona bajo en Aqua Lounge — enviar refuerzo",   type: "warn", venue_id: VENUE_AQUA },
+      { event_id: EVT_APR24, message: "Montaje Casa Papaya completado",                           type: "ok",   venue_id: VENUE_PAPAYA },
     ])
   );
   await step(
-    "insert alerts (Apr 18 completed)",
+    "insert alerts (Apr 17 completed)",
     sb.from("alerts").insert([
-      { event_id: EVT_APR18, message: "Evento cerrado — todos los venues finalizaron en horario", type: "ok",   venue_id: null },
-      { event_id: EVT_APR18, message: "Cuadre VIP final: $6,120 (24 botellas)",                   type: "info", venue_id: null },
+      { event_id: EVT_APR17, message: "Evento cerrado — todos los venues finalizaron en horario", type: "ok",   venue_id: null },
+      { event_id: EVT_APR17, message: "Cuadre VIP final: $6,120 (24 botellas)",                   type: "info", venue_id: null },
     ])
   );
 

@@ -6,14 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Capitaliza la primera letra. `toLocaleDateString('es-PA')` devuelve
-// "viernes, 25 de abril" en minúsculas; el spec del Home pide la inicial
+// "viernes, 24 de abril" en minúsculas; el spec del Home pide la inicial
 // en mayúscula.
 export function capitalizeFirst(s: string): string {
   if (!s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// "2026-04-25" → "Viernes, 25 de abril" (formato del Home).
+// "2026-04-24" → "Viernes, 24 de abril" (formato del Home).
 // Usa T12:00:00 para evitar que el offset de TZ haga retroceder un día.
 export function formatEventDate(iso: string): string {
   const d = new Date(iso + "T12:00:00");

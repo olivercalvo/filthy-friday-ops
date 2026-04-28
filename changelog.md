@@ -4,6 +4,25 @@ Historial de versiones. Formato: [Keep a Changelog](https://keepachangelog.com/)
 
 ---
 
+## [0.3.1] — 2026-04-27
+
+### Fixed
+- **Fechas del seed corregidas a viernes reales**: Apr 17, Apr 24, May 1
+  (antes Apr 18, Apr 25, May 2 — sábados). UUIDs renombrados a
+  `e1170426/e2240426/e3010526` para mantener la convención de codificar
+  la fecha en el id. Reseed aplicado contra Supabase (`scripts/reseed-events.ts`).
+- **Skeleton del título en Home**: mientras `selectedId` es `null` (entre
+  el primer render y el resolver del default desde la lista de events),
+  el `PageHeader` ahora muestra un bloque `animate-pulse` en vez de la
+  fecha del mock event. Elimina el flicker "Viernes, 25 de abril →
+  Viernes, 24 de abril" del primer paint.
+
+### Notes
+- Previous hash: d8d429a (feat: event selector en Home)
+- `npm run typecheck` ✅ · `npm run lint` ✅ · `npm run build` ✅
+
+---
+
 ## [0.3.0] — 2026-04-27
 
 ### Added
@@ -44,10 +63,9 @@ Historial de versiones. Formato: [Keep a Changelog](https://keepachangelog.com/)
 - `npm run build` ✅ 11 rutas estáticas, sin errores de tipo.
 - Verificación: `npx tsx scripts/verify-supabase.ts` 12/12, `npx tsx
   scripts/verify-event-selector.ts` 7/7.
-- Calendar mismatch: 2026-04-18, 2026-04-25 y 2026-05-02 son **sábados**
-  en el calendario real — el spec del usuario los nombra como "Viernes"
-  pero las fechas dadas son sábados. Documentado en findings.md para
-  confirmación; el seed usa los días literales que dio el usuario.
+- Calendar mismatch detectado: las fechas iniciales (Apr 18 / 25 /
+  May 2) eran sábados en el calendario real. Corregido en 0.3.1 a los
+  viernes reales (Apr 17 / 24 / May 1).
 
 ---
 
