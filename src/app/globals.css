@@ -46,8 +46,12 @@
     min-height: 100%;
   }
 
+  /* La BottomNav flotante mide ~64px y vive 16px sobre el borde
+     inferior; en iOS la safe-area añade ~34px. 112px + safe-area
+     evita que el último bloque del Home (accesos directos) quede
+     tapado en mobile/tablet. */
   body {
-    padding-bottom: 88px; /* space for bottom nav on mobile/tablet */
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
   }
   @media (min-width: 1024px) {
     body {
