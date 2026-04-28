@@ -163,6 +163,27 @@
 
 ---
 
+## BACKLOG — Infra de testing (siguiente sprint)
+
+> Pre-deploy checklist (claude.md §5) exige tests unit/functional/e2e pero la infra no existe. Diferido por scope; arrastra deuda en cada release.
+
+### Wiring base
+- [ ] Crear directorio `/tests/{unit,functional,e2e}/`
+- [ ] Configurar Vitest (`vitest.config.ts` + `npm run test` + `npm run test:watch`)
+- [ ] Configurar Playwright runner (`playwright.config.ts` + `npm run test:e2e`) — el devDep ya está instalado pero sin specs
+- [ ] Integrar coverage (c8 vía Vitest)
+
+### Specs prioritarios
+- [ ] Unit: `src/lib/event-selection.ts` (pickDefaultEvent — 4 ramas), `src/lib/utils.ts` (formatPanamaTime, formatEventDate)
+- [ ] Functional: `EventSelector` reacciona a `ff:event-changed`, persiste a localStorage; checklist toggle no triggerea fetch antes de `selectedId` resolverse (E-004 regression)
+- [ ] E2E: golden path Home → Operación → Cuadre con evento seleccionado; selector cambia evento y propaga a Cuadre
+
+### Hookear al pre-deploy
+- [ ] Agregar `npm run test` y `npm run test:e2e` como steps obligatorios del checklist en claude.md §5
+- [ ] CI gate en Vercel: bloquear `vercel deploy --prod` si tests fallan (build hook o GitHub Action)
+
+---
+
 ## BACKLOG — Fase 2 (post-MVP)
 
 > Especificación detallada en `productdesign.md` §7. **No implementar hasta cierre del MVP.**

@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "screenshots": "tsx scripts/screenshots.ts"
+    "screenshots": "tsx scripts/screenshots.ts",
+    "smoke": "tsx scripts/smoke-deploy.ts",
+    "deploy:preview": "tsx scripts/deploy.ts preview",
+    "deploy:prod": "tsx scripts/deploy.ts prod"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
